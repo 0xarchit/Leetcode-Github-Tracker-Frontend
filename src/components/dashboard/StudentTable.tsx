@@ -235,7 +235,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   >
                     <div className="flex items-center justify-center">
                       <GitCommit className="h-4 w-4 mr-1" />
-                      Commit
+                      Git Commit
                       <SortIcon field="last_commit_date" />
                     </div>
                   </TableHead>
