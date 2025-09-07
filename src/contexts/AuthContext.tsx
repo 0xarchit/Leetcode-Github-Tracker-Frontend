@@ -42,7 +42,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for cross-tab logout events
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'student-tracker:logout') {
+        setSession(null);
+        setUser(null);
+        window.location.reload();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -55,7 +68,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    try {
+      // Broadcast logout to other tabs and clear persisted data
+      localStorage.setItem('student-tracker:logout', Date.now().toString());
+      localStorage.clear();
+      sessionStorage?.clear?.();
+    } catch {}
+    // Hard reload to ensure a clean state
+    window.location.reload();
   };
 
   const value = {
