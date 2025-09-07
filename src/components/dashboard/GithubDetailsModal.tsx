@@ -119,7 +119,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
                   <Star className="h-5 w-5 text-warning" />
                   <span className="text-2xl font-bold text-warning">{student.git_authored_repo}</span>
                 </div>
-                <p className="text-sm text-muted-foreground">Authored</p>
+                <p className="text-sm text-muted-foreground">Forked Authored Repos</p>
               </CardContent>
             </Card>
           </div>
