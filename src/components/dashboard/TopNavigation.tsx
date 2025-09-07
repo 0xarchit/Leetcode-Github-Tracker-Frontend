@@ -187,7 +187,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </DropdownMenu>
 
             {/* Theme Toggle */}
-            <ThemeToggle />
+            <ThemeToggle className="text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10" />
 
             {/* Settings */}
             <Button 
