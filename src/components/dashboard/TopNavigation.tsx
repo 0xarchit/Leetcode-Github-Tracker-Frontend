@@ -165,7 +165,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
                         <div className="flex-1">
                           <p className="font-medium text-sm">{notification.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {notification.table_name.replace(/_/g, ' ')} • No LeetCode activity 3+ days
+                            {notification.table_name.replace(/_/g, ' ')} • {notification.reason || 'No Leetcode activity for 3+ days'}
                           </p>
                         </div>
                         <Button
