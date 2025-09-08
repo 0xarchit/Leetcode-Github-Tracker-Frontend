@@ -222,11 +222,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer select-none text-center min-w-[120px]"
-                    onClick={() => handleSort('lc_cur_streak')}
+                    onClick={() => handleSort('lc_lastsubmission')}
                   >
                     <div className="flex items-center justify-center">
                       LC Activity
-                      <SortIcon field="lc_cur_streak" />
+                      <SortIcon field="lc_lastsubmission" />
                     </div>
                   </TableHead>
                   <TableHead 
