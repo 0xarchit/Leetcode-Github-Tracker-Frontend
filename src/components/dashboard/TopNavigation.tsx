@@ -21,6 +21,7 @@ import { apiService, type Notification } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TopNavigationProps {
   availableTables: string[];
@@ -41,6 +42,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { signOut, user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     loadNotifications();
@@ -135,53 +137,60 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <div className="px-2 py-2">
-                  <DropdownMenuCheckboxItem
-                    checked={showOnlySelected}
-                    onCheckedChange={(v) => setShowOnlySelected(!!v)}
-                    disabled={!selectedTable}
-                  >
-                    Show only selected class
-                  </DropdownMenuCheckboxItem>
+              <DropdownMenuContent
+                align={isMobile ? 'center' : 'end'}
+                className="w-[min(90vw,22rem)] max-h-[70vh] overflow-y-auto p-0"
+                sideOffset={8}
+              >
+                {/* Sticky header with filter + title for better UX on long lists */}
+                <div className="sticky top-0 z-10 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-b">
+                  <div className="px-2 py-2">
+                    <DropdownMenuCheckboxItem
+                      checked={showOnlySelected}
+                      onCheckedChange={(v) => setShowOnlySelected(!!v)}
+                      disabled={!selectedTable}
+                    >
+                      Show only selected class
+                    </DropdownMenuCheckboxItem>
+                  </div>
+                  <div className="px-3 pb-2 pt-1 font-semibold text-sm">
+                    Inactive Students ({notifications.length})
+                    {showOnlySelected && selectedTable && (
+                      <span className="block text-xs text-muted-foreground mt-1 truncate">
+                        {selectedTable.replace(/_/g, ' ')}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <DropdownMenuSeparator />
+
+                {/* Content */}
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground">
+                  <div className="p-6 text-center text-sm text-muted-foreground">
                     No notifications
                   </div>
                 ) : (
-                  <>
-                    <div className="p-2 font-semibold text-sm border-b">
-                      Inactive Students ({notifications.length})
-                      {showOnlySelected && selectedTable && (
-                        <span className="block text-xs text-muted-foreground mt-1">
-                          {selectedTable.replace(/_/g, ' ')}
-                        </span>
-                      )}
-                    </div>
-                    {notifications.map((notification, index) => (
-                      <DropdownMenuItem key={index} className="p-3 flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{notification.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {notification.table_name.replace(/_/g, ' ')} • {notification.reason || 'No Leetcode activity for 3+ days'}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDismissNotification(notification);
-                          }}
-                          className="ml-2 h-6 w-6 p-0"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuItem>
-                    ))}
-                  </>
+                  notifications.map((notification, index) => (
+                    <DropdownMenuItem key={index} className="p-3 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate">{notification.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {notification.table_name.replace(/_/g, ' ')} • {notification.reason || 'No Leetcode activity for 3+ days'}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDismissNotification(notification);
+                        }}
+                        className="ml-2 h-6 w-6 p-0 shrink-0"
+                        aria-label="Dismiss notification"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuItem>
+                  ))
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
