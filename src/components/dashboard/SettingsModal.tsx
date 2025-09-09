@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,19 @@ import { Button } from '@/components/ui/button';
 // Removed Input & Label as admin management is no longer handled here
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, RefreshCw, Database, Loader2 } from 'lucide-react';
+import { Settings, RefreshCw, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -26,35 +36,42 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   selectedTable,
 }) => {
-  const [isUpdatingDatabase, setIsUpdatingDatabase] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
-  const handleForceUpdate = async () => {
+  const onClickForceUpdate = () => {
     if (!selectedTable) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please select a table first.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please select a table first.',
       });
       return;
     }
+    setConfirmOpen(true);
+  };
 
-    setIsUpdatingDatabase(true);
+  const handleConfirmForceUpdate = () => {
+    if (!selectedTable) return;
+    // Fire-and-forget: trigger the update without blocking UI
     try {
-      const result = await apiService.updateDatabase(selectedTable);
-      toast({
-        title: "Database Updated",
-        description: `Updated ${result.updated} records in ${result.target_table}.`,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Update Failed",
-        description: "Failed to update the database. Please try again.",
-      });
-    } finally {
-      setIsUpdatingDatabase(false);
+      void apiService
+        .updateDatabase(selectedTable)
+        .then(() => {
+          // Optional: could update a last-triggered timestamp here
+        })
+        .catch((err) => {
+          console.error('Update request error (non-blocking):', err);
+        });
+    } catch (err) {
+      console.error('Failed to send update request:', err);
     }
+
+    toast({
+      title: 'Update request sent',
+      description: 'It may take 5–10 minutes to complete. Please check back later.',
+    });
+    setConfirmOpen(false);
   };
 
   return (
@@ -92,12 +109,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 )}
                 <Button 
-                  onClick={handleForceUpdate}
-                  disabled={!selectedTable || isUpdatingDatabase}
+                  onClick={onClickForceUpdate}
+                  disabled={!selectedTable}
                   className="w-full"
                 >
-                  {isUpdatingDatabase && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isUpdatingDatabase ? 'animate-spin' : ''}`} />
+                  <RefreshCw className="h-4 w-4 mr-2" />
                   Force Update Database
                 </Button>
               </div>
@@ -128,6 +144,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </CardContent>
           </Card>
         </div>
+        {/* Confirm Force Update */}
+        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Force update database?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will trigger a background update for the selected class. It may take 5–10 minutes to finish. You can close this and check back later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmForceUpdate} autoFocus>
+                Yes, send update
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
