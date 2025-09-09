@@ -34,18 +34,31 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
 }) => {
   if (!student) return null;
 
-  const badges = student.git_badges ? student.git_badges.split(',').filter(badge => badge.trim()) : [];
+  const badges = student.git_badges && student.git_badges !== '0'
+    ? student.git_badges.split(',').filter(badge => badge.trim())
+    : [];
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const toNumber = (val: unknown): number | null => {
+    if (val === null || val === undefined) return null;
+    const n = typeof val === 'number' ? val : Number(val);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     });
   };
 
-  const getDaysAgo = (dateString: string) => {
+  const getDaysAgo = (dateString?: string | null): number | null => {
+    if (!dateString) return null;
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return null;
     const today = new Date();
     // Set both dates to start of day to get accurate day difference
     date.setHours(0, 0, 0, 0);
@@ -54,6 +67,13 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  const followers = toNumber(student.git_followers) ?? 0;
+  const following = toNumber(student.git_following) ?? 0;
+  const publicRepo = toNumber(student.git_public_repo) ?? 0;
+  const authoredRepo = toNumber(student.git_authored_repo) ?? 0;
+  const originalRepo = toNumber(student.git_original_repo) ?? 0;
+  const hasUsername = !!student.github_username;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -66,13 +86,25 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
             <div className="flex-1">
               <span>GitHub Profile</span>
               <p className="text-sm font-normal text-muted-foreground mt-1">
-                {student.name} • @{student.github_username}
+                {student.name}
+                {hasUsername ? (
+                  <>
+                    {' '}
+                    • @{student.github_username}
+                  </>
+                ) : (
+                  <>
+                    {' '}
+                    • No GitHub handle
+                  </>
+                )}
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`https://github.com/${student.github_username}`, '_blank')}
+              onClick={() => hasUsername && window.open(`https://github.com/${student.github_username}`, '_blank')}
+              disabled={!hasUsername}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View Profile
@@ -87,7 +119,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Users className="h-5 w-5 text-primary" />
-                  <span className="text-2xl font-bold text-primary">{student.git_followers}</span>
+                  <span className="text-2xl font-bold text-primary">{followers}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Followers</p>
               </CardContent>
@@ -97,7 +129,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <UserPlus className="h-5 w-5 text-secondary" />
-                  <span className="text-2xl font-bold text-secondary">{student.git_following}</span>
+                  <span className="text-2xl font-bold text-secondary">{following}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Following</p>
               </CardContent>
@@ -107,7 +139,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Folder className="h-5 w-5 text-accent" />
-                  <span className="text-2xl font-bold text-accent">{student.git_public_repo}</span>
+                  <span className="text-2xl font-bold text-accent">{publicRepo}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Public Repos</p>
               </CardContent>
@@ -117,7 +149,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Star className="h-5 w-5 text-warning" />
-                  <span className="text-2xl font-bold text-warning">{student.git_authored_repo}</span>
+                  <span className="text-2xl font-bold text-warning">{authoredRepo}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Forked Authored Repos</p>
               </CardContent>
@@ -136,15 +168,15 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Original Repositories:</span>
-                  <Badge variant="outline">{student.git_original_repo}</Badge>
+                  <Badge variant="outline">{originalRepo}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Authored Repositories:</span>
-                  <Badge variant="outline">{student.git_authored_repo}</Badge>
+                  <Badge variant="outline">{authoredRepo}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Total Public:</span>
-                  <Badge variant="outline">{student.git_public_repo}</Badge>
+                  <Badge variant="outline">{publicRepo}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -161,7 +193,10 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
                   <p className="text-sm text-muted-foreground mb-1">Last Commit Date:</p>
                   <p className="font-medium">{formatDate(student.last_commit_date)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {getDaysAgo(student.last_commit_date)} days ago
+                    {(() => {
+                      const d = getDaysAgo(student.last_commit_date);
+                      return d === null ? 'No recent activity' : `${d} days ago`;
+                    })()}
                   </p>
                 </div>
               </CardContent>

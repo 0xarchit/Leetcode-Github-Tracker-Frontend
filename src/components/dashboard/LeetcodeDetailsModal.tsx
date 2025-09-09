@@ -37,16 +37,27 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
   const languages = student.lc_language ? student.lc_language.split(',').map(lang => lang.trim()) : [];
   const badges = student.lc_badges && student.lc_badges !== '0' ? student.lc_badges.split(',').filter(badge => badge.trim()) : [];
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const toNumber = (val: unknown): number | null => {
+    if (val === null || val === undefined) return null;
+    const n = typeof val === 'number' ? val : Number(val);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return '—';
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
-  const getDaysAgo = (dateString: string) => {
+  const getDaysAgo = (dateString?: string | null): number | null => {
+    if (!dateString) return null;
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return null;
     const today = new Date();
     // Set both dates to start of day to get accurate day difference
     date.setHours(0, 0, 0, 0);
@@ -65,9 +76,19 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
     }
   };
 
-  const formatRanking = (ranking: number) => {
-    return ranking.toLocaleString();
+  const formatRanking = (ranking: unknown) => {
+    const n = toNumber(ranking);
+    return n === null ? 'N/A' : n.toLocaleString();
   };
+
+  const totalSolved = toNumber(student.lc_total_solved) ?? 0;
+  const easy = Math.max(0, toNumber(student.lc_easy) ?? 0);
+  const medium = Math.max(0, toNumber(student.lc_medium) ?? 0);
+  const hard = Math.max(0, toNumber(student.lc_hard) ?? 0);
+  const easyPct = totalSolved > 0 ? (easy / totalSolved) * 100 : 0;
+  const mediumPct = totalSolved > 0 ? (medium / totalSolved) * 100 : 0;
+  const hardPct = totalSolved > 0 ? (hard / totalSolved) * 100 : 0;
+  const hasUsername = !!student.leetcode_username;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -80,13 +101,25 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
             <div className="flex-1">
               <span>LeetCode Profile</span>
               <p className="text-sm font-normal text-muted-foreground mt-1">
-                {student.name} • @{student.leetcode_username}
+                {student.name}
+                {hasUsername ? (
+                  <>
+                    {' '}
+                    • @{student.leetcode_username}
+                  </>
+                ) : (
+                  <>
+                    {' '}
+                    • No LeetCode handle
+                  </>
+                )}
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.open(`https://leetcode.com/${student.leetcode_username}`, '_blank')}
+              onClick={() => hasUsername && window.open(`https://leetcode.com/${student.leetcode_username}`, '_blank')}
+              disabled={!hasUsername}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               View Profile
@@ -101,7 +134,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Target className="h-5 w-5 text-primary" />
-                  <span className="text-2xl font-bold text-primary">{student.lc_total_solved}</span>
+                  <span className="text-2xl font-bold text-primary">{totalSolved}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Total Solved</p>
               </CardContent>
@@ -121,7 +154,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Flame className="h-5 w-5 text-destructive" />
-                  <span className="text-2xl font-bold text-destructive">{student.lc_cur_streak}</span>
+                  <span className="text-2xl font-bold text-destructive">{toNumber(student.lc_cur_streak) ?? 0}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Current Streak</p>
               </CardContent>
@@ -131,7 +164,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <TrendingUp className="h-5 w-5 text-accent" />
-                  <span className="text-2xl font-bold text-accent">{student.lc_max_streak}</span>
+                  <span className="text-2xl font-bold text-accent">{toNumber(student.lc_max_streak) ?? 0}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Max Streak</p>
               </CardContent>
@@ -152,11 +185,11 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-success">Easy</span>
                     <Badge variant="outline" className="text-success border-success">
-                      {student.lc_easy}
+                      {easy}
                     </Badge>
                   </div>
                   <Progress 
-                    value={(student.lc_easy / student.lc_total_solved) * 100} 
+                    value={easyPct} 
                     className="h-2"
                   />
                 </div>
@@ -165,11 +198,11 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-warning">Medium</span>
                     <Badge variant="outline" className="text-warning border-warning">
-                      {student.lc_medium}
+                      {medium}
                     </Badge>
                   </div>
                   <Progress 
-                    value={(student.lc_medium / student.lc_total_solved) * 100} 
+                    value={mediumPct} 
                     className="h-2"
                   />
                 </div>
@@ -178,11 +211,11 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium text-destructive">Hard</span>
                     <Badge variant="outline" className="text-destructive border-destructive">
-                      {student.lc_hard}
+                      {hard}
                     </Badge>
                   </div>
                   <Progress 
-                    value={(student.lc_hard / student.lc_total_solved) * 100} 
+                    value={hardPct} 
                     className="h-2"
                   />
                 </div>
@@ -204,14 +237,20 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                   <p className="text-sm text-muted-foreground mb-1">Last Submission:</p>
                   <p className="font-medium">{formatDate(student.lc_lastsubmission)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {getDaysAgo(student.lc_lastsubmission)} days ago
+                    {(() => {
+                      const d = getDaysAgo(student.lc_lastsubmission);
+                      return d === null ? 'No recent activity' : `${d} days ago`;
+                    })()}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Last Accepted:</p>
                   <p className="font-medium">{formatDate(student.lc_lastacceptedsubmission)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {getDaysAgo(student.lc_lastacceptedsubmission)} days ago
+                    {(() => {
+                      const d = getDaysAgo(student.lc_lastacceptedsubmission);
+                      return d === null ? 'No recent activity' : `${d} days ago`;
+                    })()}
                   </p>
                 </div>
               </CardContent>
