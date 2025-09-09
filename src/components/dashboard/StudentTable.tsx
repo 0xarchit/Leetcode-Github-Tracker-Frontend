@@ -237,7 +237,6 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     onClick={() => handleSort('last_commit_date')}
                   >
                     <div className="flex items-center justify-center">
-                      <GitCommit className="h-4 w-4 mr-1" />
                       Git Commit
                       <SortIcon field="last_commit_date" />
                     </div>
