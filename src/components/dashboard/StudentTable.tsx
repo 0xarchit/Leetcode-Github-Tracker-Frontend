@@ -193,6 +193,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
             <Table>
               <TableHeader>
                 <TableRow className="bg-table-header hover:bg-table-header">
+                  <TableHead className="text-center w-14 min-w-[56px]">
+                    Sr No.
+                  </TableHead>
                   <TableHead 
                     className="cursor-pointer select-none min-w-[120px]"
                     onClick={() => handleSort('roll_number')}
@@ -254,6 +257,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         isEvenRow ? 'bg-table-row-even' : 'bg-table-row-odd'
                       }`}
                     >
+                      <TableCell className="text-center text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
                       <TableCell className="font-mono text-sm">
                         {student.roll_number}
                       </TableCell>
