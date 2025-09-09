@@ -10,7 +10,8 @@ class CacheService {
 
   private hasStorage(): boolean {
     try {
-      if (typeof window === "undefined" || !("localStorage" in window)) return false;
+      if (typeof window === "undefined" || !("localStorage" in window))
+        return false;
       const testKey = `${this.PREFIX}__test__`;
       window.localStorage.setItem(testKey, "1");
       window.localStorage.removeItem(testKey);
@@ -47,7 +48,11 @@ class CacheService {
       if (!raw) return null;
       const item = JSON.parse(raw) as CacheItem<T>;
       const now = Date.now();
-      if (!item || typeof item.timestamp !== "number" || typeof item.expiresIn !== "number") {
+      if (
+        !item ||
+        typeof item.timestamp !== "number" ||
+        typeof item.expiresIn !== "number"
+      ) {
         window.localStorage.removeItem(this.k(key));
         return null;
       }
@@ -58,7 +63,9 @@ class CacheService {
       return item.data as T;
     } catch {
       // Corrupt entry, remove it
-      try { window.localStorage.removeItem(this.k(key)); } catch {}
+      try {
+        window.localStorage.removeItem(this.k(key));
+      } catch {}
       return null;
     }
   }
@@ -72,6 +79,15 @@ class CacheService {
         if (k && k.startsWith(this.PREFIX)) keysToRemove.push(k);
       }
       keysToRemove.forEach((k) => window.localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+  }
+
+  remove(key: string): void {
+    if (!this.hasStorage()) return;
+    try {
+      window.localStorage.removeItem(this.k(key));
     } catch {
       // ignore
     }

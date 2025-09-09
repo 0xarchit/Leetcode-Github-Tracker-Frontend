@@ -77,23 +77,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleClearCache = () => {
     try {
-      // Clear our cache entries
-      cacheService.clear();
-      // Clear app-specific local storage keys
-      try { window.localStorage.removeItem('student-tracker:last-table'); } catch {}
-      try { window.localStorage.removeItem('student-tracker-theme'); } catch {}
-      // Optional: clear session storage used by the app
-      try { window.sessionStorage.clear(); } catch {}
+      // Clear only specific cache entries
+      cacheService.remove('available_tables');
+      if (selectedTable) {
+        cacheService.remove(`student_data_${selectedTable}`);
+      }
     } catch (err) {
       console.error('Error clearing cache:', err);
     }
 
     toast({
       title: 'Cache cleared',
-      description: 'Local data has been cleared. Reloading…',
+      description: 'Selected cache keys cleared. Reloading…',
     });
 
-    // Give a tiny delay so the toast can render, then reload
     setTimeout(() => {
       window.location.reload();
     }, 200);
@@ -198,7 +195,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Clear locally stored cache and preferences for this app. This will not sign you out Just sync you with current DB.
+                Clears only cached data for the selected class and the available tables list. Theme and last table selection are preserved.
               </p>
               <Button variant="secondary" onClick={handleClearCache} className="w-full">
                 <Trash2 className="h-4 w-4 mr-2" />
