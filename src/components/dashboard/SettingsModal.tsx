@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 // Removed Input & Label as admin management is no longer handled here
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, RefreshCw, Database } from 'lucide-react';
+import { Settings, RefreshCw, Database, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/services/api';
+import { cacheService } from '@/services/cacheService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,6 +73,30 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       description: 'It may take 5–10 minutes to complete. Please check back later.',
     });
     setConfirmOpen(false);
+  };
+
+  const handleClearCache = () => {
+    try {
+      // Clear our cache entries
+      cacheService.clear();
+      // Clear app-specific local storage keys
+      try { window.localStorage.removeItem('student-tracker:last-table'); } catch {}
+      try { window.localStorage.removeItem('student-tracker-theme'); } catch {}
+      // Optional: clear session storage used by the app
+      try { window.sessionStorage.clear(); } catch {}
+    } catch (err) {
+      console.error('Error clearing cache:', err);
+    }
+
+    toast({
+      title: 'Cache cleared',
+      description: 'Local data has been cleared. Reloading…',
+    });
+
+    // Give a tiny delay so the toast can render, then reload
+    setTimeout(() => {
+      window.location.reload();
+    }, 200);
   };
 
   return (
@@ -161,6 +186,27 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Cache & Storage */}
+        <div className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-base">
+                <Trash2 className="h-5 w-5" />
+                <span>Cache & Storage</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Clear locally stored cache and preferences for this app. This will not sign you out.
+              </p>
+              <Button variant="secondary" onClick={handleClearCache} className="w-full">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear Cache
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </DialogContent>
     </Dialog>
   );
