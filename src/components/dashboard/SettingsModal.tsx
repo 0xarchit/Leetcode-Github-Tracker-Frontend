@@ -198,7 +198,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Clear locally stored cache and preferences for this app. This will not sign you out.
+                Clear locally stored cache and preferences for this app. This will not sign you out Just sync you with current DB.
               </p>
               <Button variant="secondary" onClick={handleClearCache} className="w-full">
                 <Trash2 className="h-4 w-4 mr-2" />
