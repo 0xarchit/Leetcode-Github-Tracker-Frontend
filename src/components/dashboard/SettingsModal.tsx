@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Settings, RefreshCw, Database, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiService } from '@/services/api';
+import { apiService, type LastUpdateEntry } from '@/services/api';
 import { cacheService } from '@/services/cacheService';
 import {
   AlertDialog,
@@ -39,6 +39,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
+  const [lastUpdates, setLastUpdates] = useState<LastUpdateEntry[] | null>(null);
+  const [loadingLastUpdates, setLoadingLastUpdates] = useState(false);
+  const [lastUpdatesError, setLastUpdatesError] = useState<string | null>(null);
 
   const onClickForceUpdate = () => {
     if (!selectedTable) {
@@ -94,6 +97,44 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setTimeout(() => {
       window.location.reload();
     }, 200);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoadingLastUpdates(true);
+      setLastUpdatesError(null);
+      try {
+        const data = await apiService.getLastUpdates();
+        if (!cancelled) setLastUpdates(data);
+      } catch (e) {
+        if (!cancelled) setLastUpdatesError('Failed to load last updates');
+      } finally {
+        if (!cancelled) setLoadingLastUpdates(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
+  const formatDateTime = (s: string) => {
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleString();
+  };
+
+  const fromNow = (s: string) => {
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return '';
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
   };
 
   return (
@@ -201,6 +242,38 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <Trash2 className="h-4 w-4 mr-2" />
                 Clear Cache
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Last Updates */}
+        <div className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-base">
+                <Database className="h-5 w-5" />
+                <span>Last Updates</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingLastUpdates ? (
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              ) : lastUpdatesError ? (
+                <p className="text-sm text-destructive">{lastUpdatesError}</p>
+              ) : lastUpdates && lastUpdates.length > 0 ? (
+                <div className="divide-y">
+                  {lastUpdates.map((entry, idx) => (
+                    <div key={`${entry.table_name}-${idx}`} className="py-2 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{entry.table_name.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{formatDateTime(entry.changed_at)} ({fromNow(entry.changed_at)})</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No update info available.</p>
+              )}
             </CardContent>
           </Card>
         </div>

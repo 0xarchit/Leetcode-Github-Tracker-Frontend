@@ -7,6 +7,8 @@ interface CacheItem<T> {
 class CacheService {
   private readonly HOUR_IN_MS = 60 * 60 * 1000;
   private readonly PREFIX = "cache:";
+  // Backward-compatibility: older keys were stored without the colon
+  private readonly LEGACY_PREFIX = "cache";
 
   private hasStorage(): boolean {
     try {
@@ -23,6 +25,10 @@ class CacheService {
 
   private k(key: string) {
     return `${this.PREFIX}${key}`;
+  }
+
+  private legacyK(key: string) {
+    return `${this.LEGACY_PREFIX}${key}`;
   }
 
   set<T>(key: string, data: T, expiresInMs: number = this.HOUR_IN_MS): void {
@@ -44,7 +50,9 @@ class CacheService {
   get<T>(key: string): T | null {
     if (!this.hasStorage()) return null;
     try {
-      const raw = window.localStorage.getItem(this.k(key));
+      let raw = window.localStorage.getItem(this.k(key));
+      // Fallback to legacy key format without colon
+      if (!raw) raw = window.localStorage.getItem(this.legacyK(key));
       if (!raw) return null;
       const item = JSON.parse(raw) as CacheItem<T>;
       const now = Date.now();
@@ -70,13 +78,30 @@ class CacheService {
     }
   }
 
+  getTimestamp(key: string): number | null {
+    if (!this.hasStorage()) return null;
+    try {
+      let raw = window.localStorage.getItem(this.k(key));
+      if (!raw) raw = window.localStorage.getItem(this.legacyK(key));
+      if (!raw) return null;
+      const item = JSON.parse(raw) as CacheItem<unknown>;
+      if (!item || typeof item.timestamp !== "number") return null;
+      return item.timestamp;
+    } catch {
+      return null;
+    }
+  }
+
   clear(): void {
     if (!this.hasStorage()) return;
     try {
       const keysToRemove: string[] = [];
       for (let i = 0; i < window.localStorage.length; i++) {
         const k = window.localStorage.key(i);
-        if (k && k.startsWith(this.PREFIX)) keysToRemove.push(k);
+        if (!k) continue;
+        if (k.startsWith(this.PREFIX) || k.startsWith(this.LEGACY_PREFIX)) {
+          keysToRemove.push(k);
+        }
       }
       keysToRemove.forEach((k) => window.localStorage.removeItem(k));
     } catch {
@@ -88,6 +113,7 @@ class CacheService {
     if (!this.hasStorage()) return;
     try {
       window.localStorage.removeItem(this.k(key));
+      window.localStorage.removeItem(this.legacyK(key));
     } catch {
       // ignore
     }

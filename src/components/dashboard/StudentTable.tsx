@@ -82,6 +82,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
         bValue = new Date(bValue);
       }
 
+      // Ensure numeric comparison for ranking; always push missing/invalid to the end
+      if (sortField === 'lc_ranking') {
+        const aNum = Number(aValue);
+        const bNum = Number(bValue);
+        const aMissing = !Number.isFinite(aNum) || aNum <= 0;
+        const bMissing = !Number.isFinite(bNum) || bNum <= 0;
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1; // a goes to end
+        if (bMissing) return -1; // b goes to end
+        aValue = aNum;
+        bValue = bNum;
+      }
+
       if (typeof aValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
@@ -175,6 +188,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                 <SelectItem value="lc_cur_streak-desc">Current Streak (High to Low)</SelectItem>
                 <SelectItem value="lc_max_streak-desc">Max Streak (High to Low)</SelectItem>
                 <SelectItem value="lc_ranking-asc">LC Ranking (Best to Worst)</SelectItem>
+                <SelectItem value="lc_ranking-desc">LC Ranking (Worst to Best)</SelectItem>
                 <SelectItem value="last_commit_date-desc">Recent Commits</SelectItem>
                 <SelectItem value="name-asc">Name (A to Z)</SelectItem>
               </SelectContent>
@@ -221,6 +235,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
                     <div className="flex items-center justify-center">
                       LC Solved
                       <SortIcon field="lc_total_solved" />
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer select-none text-center min-w-[120px]"
+                    onClick={() => handleSort('lc_ranking')}
+                  >
+                    <div className="flex items-center justify-center">
+                      LC Rank
+                      <SortIcon field="lc_ranking" />
                     </div>
                   </TableHead>
                   <TableHead 
@@ -281,6 +304,19 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               H: {student.lc_hard}
                             </Badge>
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center space-y-1">
+                          <span className="font-semibold">
+                            {(() => {
+                              const n = Number(student.lc_ranking);
+                              if (Number.isFinite(n) && n > 0) {
+                                return `#${Math.round(n).toLocaleString('en-US')}`;
+                              }
+                              return '—';
+                            })()}
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">

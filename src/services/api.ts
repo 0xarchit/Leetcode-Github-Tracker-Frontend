@@ -1,5 +1,8 @@
 import { cacheService } from "./cacheService";
 
+// Guard to avoid multiple reloads in the same tick when multiple calls detect staleness
+let __staleReloadScheduled = false;
+
 const API_BASE_URL = (() => {
   const url = import.meta.env.VITE_API_BASE_URL;
   if (!url) {
@@ -63,6 +66,11 @@ export interface RemoveNotificationResponse {
   removed: number;
 }
 
+export interface LastUpdateEntry {
+  table_name: string;
+  changed_at: string; // ISO-like string from backend
+}
+
 class ApiService {
   private async request<T>(
     endpoint: string,
@@ -110,9 +118,43 @@ class ApiService {
   async getStudentData(tableName: string): Promise<Student[]> {
     const cacheKey = `student_data_${tableName}`;
     const cached = cacheService.get<Student[]>(cacheKey);
-
     if (cached && !cacheService.isForceRefresh()) {
-      return cached;
+      // Before trusting cache, compare with last update time for this table
+      try {
+        const lastUpdates = await this.getLastUpdates();
+        const base = tableName.toLowerCase().replace(/_data$/i, "");
+        // Consider both the base table and the _Data variant
+        const candidates = lastUpdates.filter((e) => {
+          const t = e.table_name.toLowerCase();
+          return t === base || t === `${base}_data`;
+        });
+
+        if (candidates.length > 0) {
+          // Use the most recent changed_at among candidates
+          const latestChangedAt = candidates
+            .map((e) => new Date(e.changed_at).getTime())
+            .filter((t) => !Number.isNaN(t))
+            .reduce((max, t) => Math.max(max, t), 0);
+
+          const cacheTs = cacheService.getTimestamp(cacheKey) ?? 0;
+          if (latestChangedAt > 0 && cacheTs < latestChangedAt) {
+            // Invalidate stale cache and reload site to ensure fresh data is loaded
+            cacheService.remove(cacheKey);
+            if (typeof window !== "undefined" && !__staleReloadScheduled) {
+              __staleReloadScheduled = true;
+              setTimeout(() => window.location.reload(), 50);
+            }
+          } else {
+            return cached;
+          }
+        } else {
+          // If no entry found, assume cache is fine
+          return cached;
+        }
+      } catch {
+        // If lastUpdate fails, fall back to cached data
+        return cached;
+      }
     }
 
     const result = await this.request<Student[]>("/data", {
@@ -128,9 +170,11 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ table_name: tableName }),
     });
-
-    // Clear related cache after force update
-    cacheService.clear();
+    // Clear related caches after force update (target table and available tables)
+    try {
+      cacheService.remove(`student_data_${tableName}`);
+      cacheService.remove("available_tables");
+    } catch {}
 
     return result;
   }
@@ -150,6 +194,11 @@ class ApiService {
         roll_number: rollNumber,
       }),
     });
+  }
+
+  async getLastUpdates(): Promise<LastUpdateEntry[]> {
+    // Always fetch fresh to ensure prompt cache invalidation when server data changes
+    return this.request<LastUpdateEntry[]>("/lastUpdate");
   }
 }
 
