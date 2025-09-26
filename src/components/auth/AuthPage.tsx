@@ -7,13 +7,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, GraduationCap } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiService } from '@/services/api';
 
 const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [available, setAvailable] = useState<string[]>([]);
 
   const flowType = useMemo(() => {
     const hash = window.location.hash.replace(/^#/, '');
@@ -26,6 +28,17 @@ const AuthPage = () => {
       navigate('/auth/update-password', { replace: true });
     }
   }, [flowType, navigate]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiService.getAvailableTables();
+        setAvailable(res.tables || []);
+      } catch {
+        // ignore on auth page
+      }
+    })();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -110,6 +123,17 @@ const AuthPage = () => {
                 Sign In
               </Button>
             </form>
+            <div className="mt-6 text-sm text-muted-foreground">
+              <div className="mb-2">Or view public class data:</div>
+              <ul className="list-disc pl-5 space-y-1">
+                {available.slice(0, 6).map((t) => (
+                  <li key={t}>
+                    <Link className="text-primary hover:underline" to={`/classes?class=${encodeURIComponent(t)}`}>{t}</Link>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs">Note: Data updates approximately every 12 hours.</p>
+            </div>
           </CardContent>
         </Card>
       </div>

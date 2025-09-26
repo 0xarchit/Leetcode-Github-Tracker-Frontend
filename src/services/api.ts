@@ -36,6 +36,8 @@ export interface Student {
   lc_max_streak: number;
   lc_badges: string;
   lc_language: string;
+  gh_contribution_history?: Record<string, number>;
+  lc_submission_history?: Record<string, number>;
   last_commit_day: string;
 }
 
@@ -115,13 +117,18 @@ class ApiService {
     return result;
   }
 
-  async getStudentData(tableName: string): Promise<Student[]> {
+  async getStudentData(
+    tableName: string,
+    options?: { useCachedLastUpdate?: boolean }
+  ): Promise<Student[]> {
     const cacheKey = `student_data_${tableName}`;
     const cached = cacheService.get<Student[]>(cacheKey);
     if (cached && !cacheService.isForceRefresh()) {
       // Before trusting cache, compare with last update time for this table
       try {
-        const lastUpdates = await this.getLastUpdates();
+        const lastUpdates = options?.useCachedLastUpdate
+          ? await this.getLastUpdatesCached()
+          : await this.getLastUpdates();
         const base = tableName.toLowerCase().replace(/_data$/i, "");
         // Consider both the base table and the _Data variant
         const candidates = lastUpdates.filter((e) => {
@@ -199,6 +206,18 @@ class ApiService {
   async getLastUpdates(): Promise<LastUpdateEntry[]> {
     // Always fetch fresh to ensure prompt cache invalidation when server data changes
     return this.request<LastUpdateEntry[]>("/lastUpdate");
+  }
+
+  // Cached variant for public/non-auth pages to avoid repeated calls
+  async getLastUpdatesCached(
+    ttlMs: number = 5 * 60 * 1000
+  ): Promise<LastUpdateEntry[]> {
+    const cacheKey = "last_update_entries";
+    const cached = cacheService.get<LastUpdateEntry[]>(cacheKey);
+    if (cached) return cached;
+    const fresh = await this.request<LastUpdateEntry[]>("/lastUpdate");
+    cacheService.set(cacheKey, fresh, ttlMs);
+    return fresh;
   }
 }
 

@@ -34,6 +34,7 @@ interface StudentTableProps {
   students: Student[];
   onOpenGithubDetails: (student: Student) => void;
   onOpenLeetcodeDetails: (student: Student) => void;
+  readOnly?: boolean;
 }
 
 type SortField = 'name' | 'roll_number' | 'lc_total_solved' | 'lc_cur_streak' | 'lc_max_streak' | 'lc_ranking' | 'last_commit_date' | 'lc_lastsubmission';
@@ -43,6 +44,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   students,
   onOpenGithubDetails,
   onOpenLeetcodeDetails,
+  readOnly = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
@@ -264,7 +266,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                       <SortIcon field="last_commit_date" />
                     </div>
                   </TableHead>
+                  {!readOnly && (
                   <TableHead className="text-center min-w-[100px]">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -343,26 +347,28 @@ const StudentTable: React.FC<StudentTableProps> = ({
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onOpenGithubDetails(student)}
-                            className="hover:bg-primary hover:text-primary-foreground transition-fast"
-                          >
-                            <Github className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onOpenLeetcodeDetails(student)}
-                            className="hover:bg-warning hover:text-warning-foreground transition-fast"
-                          >
-                            <Code2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {!readOnly && (
+                        <TableCell className="text-center">
+                          <div className="flex justify-center flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onOpenGithubDetails(student)}
+                              className="hover:bg-primary hover:text-primary-foreground transition-fast"
+                            >
+                              <Github className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onOpenLeetcodeDetails(student)}
+                              className="hover:bg-warning hover:text-warning-foreground transition-fast"
+                            >
+                              <Code2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   );
                 })}

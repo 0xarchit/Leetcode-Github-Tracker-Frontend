@@ -8,6 +8,7 @@ import AuthPage from "@/components/auth/AuthPage";
 import PasswordUpdate from "@/components/auth/PasswordUpdate";
 import Dashboard from "@/components/dashboard/Dashboard";
 import NotFound from "./pages/NotFound";
+import PublicClass from "./pages/PublicClass";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -42,6 +43,8 @@ const AppContent = () => {
       <Routes>
   <Route path="/" element={user ? <Dashboard /> : <AuthPage />} />
   <Route path="/auth" element={<AuthPage />} />
+  {/* Public read-only class page (query param controlled) */}
+  <Route path="/classes" element={<PublicClass />} />
   <Route path="/auth/update-password" element={<PasswordUpdate />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
