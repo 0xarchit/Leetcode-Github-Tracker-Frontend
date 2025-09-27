@@ -283,9 +283,61 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
   };
 
+  // Shared helper: count badges from various representations
+  const countBadges = (val?: string | null) => {
+    if (!val) return 0;
+    const raw = String(val).trim();
+    if (!raw || /^(?:—|-|n\/?a|null|undefined)$/i.test(raw)) return 0;
+
+    // Try strict JSON first
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
+      if (parsed && typeof parsed === "object") {
+        // Common shapes
+        const maybeArrays = ["badges", "items", "list"] as const;
+        for (const k of maybeArrays) {
+          const arr: unknown = (parsed as any)[k];
+          if (Array.isArray(arr)) return arr.filter(Boolean).length;
+        }
+        // Object of counts e.g. { gold: 2, silver: 1 }
+        const nums = Object.values(parsed).map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0);
+        if (nums.length) return nums.reduce((a, b) => a + b, 0);
+      }
+    } catch {}
+
+    // Heuristic: bracketed list like [..]
+    if (raw.startsWith("[") && raw.endsWith("]")) {
+      if (raw.includes("{")) {
+        const matches = raw.match(/{/g);
+        if (matches) return matches.length;
+      }
+      const inside = raw.slice(1, -1);
+      const parts = inside
+        .split(",")
+        .map((t) => t.replace(/['"\[\]]/g, "").trim())
+        .filter(Boolean);
+      return parts.length;
+    }
+
+    // Heuristic: key:value counts e.g. gold:2,silver:1
+    const nums = raw.match(/\d+/g)?.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0) || [];
+    if (nums.length) {
+      const sum = nums.reduce((a, b) => a + b, 0);
+      if (sum > 0) return sum;
+    }
+
+    // Heuristic: repeated word 'badge'
+    const badgeHits = raw.match(/badge/gi);
+    if (badgeHits && badgeHits.length) return badgeHits.length;
+
+    // Delimited fallback
+    const parts = raw.split(/[|,;\n]+/).map((t) => t.trim()).filter(Boolean);
+    return parts.length; // if no delimiter found, returns 0 which is safer than always 1
+  };
+
   type MetricKey =
     | "git_followers"
-    | "git_following"
     | "git_public_repo"
     | "git_original_repo"
     | "git_authored_repo"
@@ -306,7 +358,6 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
   const winners = useMemo(() => {
     const res: Record<MetricKey, Set<string>> = {
       git_followers: new Set(),
-      git_following: new Set(),
       git_public_repo: new Set(),
       git_original_repo: new Set(),
       git_authored_repo: new Set(),
@@ -354,24 +405,11 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
 
     // GitHub numeric highs
     maxBy((s) => Number(s.git_followers ?? 0), "git_followers");
-    maxBy((s) => Number(s.git_following ?? 0), "git_following");
     maxBy((s) => Number(s.git_public_repo ?? 0), "git_public_repo");
     maxBy((s) => Number(s.git_original_repo ?? 0), "git_original_repo");
     maxBy((s) => Number(s.git_authored_repo ?? 0), "git_authored_repo");
     // Latest commit date
     maxBy((s) => toTime(s.last_commit_date), "last_commit_date");
-    // GitHub badges count (higher is better)
-    const countBadges = (val?: string | null) => {
-      if (!val) return 0;
-      try {
-        const parsed = JSON.parse(val as string);
-        if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
-      } catch {}
-      return String(val)
-        .split(/[|,;]+/)
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0 && t !== "—").length;
-    };
     maxBy((s) => countBadges(s.git_badges), "git_badges_count");
 
     // LeetCode highs
@@ -409,22 +447,27 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     }
   };
 
-  // Compute overall champion(s): student(s) who win the most metrics
-  const championIds = useMemo(() => {
+  // Per-student win counts and overall champion(s)
+  const metricsAll = useMemo(() => Object.keys(winners) as MetricKey[], [winners]);
+  const totalConsidered = useMemo(
+    () => metricsAll.filter((m) => winners[m].size > 0).length,
+    [metricsAll, winners]
+  );
+  const winCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    const metrics = Object.keys(winners) as MetricKey[];
-    for (const m of metrics) {
-      const set = winners[m];
-      for (const id of set) {
-        counts.set(id, (counts.get(id) ?? 0) + 1);
-      }
+    for (const m of metricsAll) {
+      for (const id of winners[m]) counts.set(id, (counts.get(id) ?? 0) + 1);
     }
+    return counts;
+  }, [metricsAll, winners]);
+  const championIds = useMemo(() => {
     let max = 0;
-    for (const v of counts.values()) max = Math.max(max, v);
+    for (const v of winCounts.values()) max = Math.max(max, v);
     if (max <= 0) return new Set<string>();
-    return new Set([...counts.entries()].filter(([, v]) => v === max).map(([k]) => k));
-  }, [winners]);
+    return new Set([...winCounts.entries()].filter(([, v]) => v === max).map(([k]) => k));
+  }, [winCounts]);
   const isChampion = (s: StudentWithClass) => championIds.has(studentKey(s));
+  const getWinCount = (s: StudentWithClass) => winCounts.get(studentKey(s)) ?? 0;
 
   const toggle = (cls: string, roll: number) => {
     const id = `${cls}:${roll}`;
@@ -616,6 +659,15 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                             <Crown className="h-4 w-4 text-yellow-500" aria-label="Top performer" />
                           )}
                           <span className="truncate">{s.name}</span>
+                          {totalConsidered > 0 && (
+                            <Badge
+                              variant="secondary"
+                              className="ml-1 text-[10px] px-1.5 py-0.5"
+                              title="Parameters won / total considered"
+                            >
+                              {getWinCount(s)} / {totalConsidered}
+                            </Badge>
+                          )}
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="text-sm space-y-2">
@@ -655,7 +707,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Following</span>
-                            <span className={`font-medium ${winCls(isWinner('git_following', s))}`}>{fmtNum(s.git_following)}</span>
+                            <span className="font-medium">{fmtNum(s.git_following)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Public Repos</span>
@@ -674,23 +726,12 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                             <span className={`font-medium ${winCls(isWinner('last_commit_date', s))}`}>{fmtDate(s.last_commit_date)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Last Commit Day</span>
-                            <span className="font-medium">{s.last_commit_day || '—'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Badges</span>
                             <span
                               className={`font-medium ${winCls(isWinner('git_badges_count', s))}`}
                               title={s.git_badges || undefined}
                             >
-                              {(() => {
-                                try {
-                                  const parsed = s.git_badges ? JSON.parse(s.git_badges) : null;
-                                  if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
-                                } catch {}
-                                const val = s.git_badges || '';
-                                return val.split(/[|,;]+/).map(t=>t.trim()).filter(t=>t && t !== '—').length;
-                              })()}
+                              {countBadges(s.git_badges)}
                             </span>
                           </div>
                         </CardContent>
@@ -740,10 +781,10 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Badges</span>
                             <span
-                              className={`font-medium ${winCls(isWinner('lc_badges_count', s))} truncate max-w-[10rem]`}
+                              className={`font-medium ${winCls(isWinner('lc_badges_count', s))}`}
                               title={s.lc_badges || undefined}
                             >
-                              {s.lc_badges || '—'}
+                              {countBadges(s.lc_badges)}
                             </span>
                           </div>
                         </CardContent>

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 // Removed Input & Label as admin management is no longer handled here
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, RefreshCw, Database, Trash2 } from 'lucide-react';
+import { Settings, RefreshCw, Database, Trash2, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiService, type LastUpdateEntry } from '@/services/api';
 import { cacheService } from '@/services/cacheService';
@@ -42,6 +42,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [lastUpdates, setLastUpdates] = useState<LastUpdateEntry[] | null>(null);
   const [loadingLastUpdates, setLoadingLastUpdates] = useState(false);
   const [lastUpdatesError, setLastUpdatesError] = useState<string | null>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   const onClickForceUpdate = () => {
     if (!selectedTable) {
@@ -118,6 +120,94 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
+  // PWA install capture and detection
+  useEffect(() => {
+    // subscribe to global installed state changes
+    const setFromGlobal = () => {
+      setIsStandalone(Boolean((window as any).__PWA_IS_INSTALLED));
+    };
+    setFromGlobal();
+    window.addEventListener('pwa:installed-state-changed', setFromGlobal as any);
+    // end subscription on unmount
+    return () => {
+      window.removeEventListener('pwa:installed-state-changed', setFromGlobal as any);
+    };
+  }, []);
+
+  // Recompute installed state when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    const computeStandalone = () => {
+      try {
+        const iosStandalone = (navigator as any).standalone === true;
+        const modes = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'];
+        const mediaMatch = modes.some((m) => window.matchMedia && window.matchMedia(`(display-mode: ${m})`).matches);
+        return iosStandalone || mediaMatch;
+      } catch {
+        return false;
+      }
+    };
+    const globalInstalled = Boolean((window as any).__PWA_IS_INSTALLED);
+    setIsStandalone(globalInstalled || computeStandalone());
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Helper to detect installed PWA across platforms and display modes
+    const computeStandalone = () => {
+      try {
+        const iosStandalone = (navigator as any).standalone === true; // iOS Safari
+        const modes = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'];
+        const mediaMatch = modes.some((m) => window.matchMedia && window.matchMedia(`(display-mode: ${m})`).matches);
+        return iosStandalone || mediaMatch;
+      } catch {
+        return false;
+      }
+    };
+
+    // Seed any globally captured prompt
+    setDeferredPrompt((window as any).__deferredPWAInstallPrompt || null);
+    const onAvailable = () => setDeferredPrompt((window as any).__deferredPWAInstallPrompt || null);
+    const onInstalled = () => {
+      setDeferredPrompt(null);
+      setIsStandalone(true);
+    };
+    const recompute = () => setIsStandalone(computeStandalone());
+
+  window.addEventListener('pwa:beforeinstallprompt', onAvailable);
+  window.addEventListener('appinstalled', onInstalled);
+    window.addEventListener('visibilitychange', recompute);
+    window.addEventListener('resize', recompute);
+    try {
+      const mqStandalone = window.matchMedia('(display-mode: standalone)');
+      const mqFullscreen = window.matchMedia('(display-mode: fullscreen)');
+      const mqMinimal = window.matchMedia('(display-mode: minimal-ui)');
+      const mqWco = window.matchMedia('(display-mode: window-controls-overlay)');
+      mqStandalone?.addEventListener?.('change', recompute);
+      mqFullscreen?.addEventListener?.('change', recompute);
+      mqMinimal?.addEventListener?.('change', recompute);
+      mqWco?.addEventListener?.('change', recompute);
+    } catch {}
+
+    recompute();
+    return () => {
+      window.removeEventListener('pwa:beforeinstallprompt', onAvailable);
+      window.removeEventListener('appinstalled', onInstalled);
+      window.removeEventListener('visibilitychange', recompute);
+      window.removeEventListener('resize', recompute);
+    };
+  }, []);
+
+  const onInstallClick = async () => {
+    try {
+      const promptEvt = deferredPrompt || (window as any).__deferredPWAInstallPrompt;
+      if (!promptEvt) return; // nothing to do if not available yet
+      promptEvt.prompt();
+      await promptEvt.userChoice; // let the browser handle UI; no toast
+      setDeferredPrompt(null);
+      (window as any).__deferredPWAInstallPrompt = null;
+    } catch {}
+  };
+
   const formatDateTime = (s: string) => {
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return s;
@@ -139,7 +229,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -199,6 +289,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Cache Status:</span>
                 <Badge variant="secondary">1 Hour TTL</Badge>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">PWA:</span>
+                <Button
+                  variant="secondary"
+                  className="inline-flex items-center"
+                  onClick={onInstallClick}
+                  disabled={isStandalone || !deferredPrompt}
+                  title={
+                    isStandalone
+                      ? 'Already installed'
+                      : deferredPrompt
+                        ? 'Install app'
+                        : 'Install not available on this device/browser state'
+                  }
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isStandalone ? 'Installed' : deferredPrompt ? 'Install App' : 'Installed'}
+                </Button>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Version:</span>
