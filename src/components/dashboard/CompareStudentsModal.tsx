@@ -32,14 +32,26 @@ type WithHist = Pick<
   | "github_username"
   | "leetcode_username"
   | "git_followers"
+  | "git_following"
   | "git_public_repo"
+  | "git_original_repo"
   | "git_authored_repo"
+  | "last_commit_date"
+  | "git_badges"
   | "lc_total_solved"
+  | "lc_easy"
+  | "lc_medium"
+  | "lc_hard"
   | "lc_ranking"
+  | "lc_lastsubmission"
+  | "lc_lastacceptedsubmission"
   | "lc_cur_streak"
   | "lc_max_streak"
+  | "lc_badges"
+  | "lc_language"
   | "gh_contribution_history"
   | "lc_submission_history"
+  | "last_commit_day"
 >;
 
 type StudentWithClass = WithHist & { table_name: string };
@@ -169,14 +181,26 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
           github_username: s.github_username,
           leetcode_username: s.leetcode_username,
           git_followers: s.git_followers,
+          git_following: s.git_following,
           git_public_repo: s.git_public_repo,
+          git_original_repo: s.git_original_repo,
           git_authored_repo: s.git_authored_repo,
+          last_commit_date: s.last_commit_date,
+          git_badges: s.git_badges,
           lc_total_solved: s.lc_total_solved,
+          lc_easy: s.lc_easy,
+          lc_medium: s.lc_medium,
+          lc_hard: s.lc_hard,
           lc_ranking: s.lc_ranking,
+          lc_lastsubmission: s.lc_lastsubmission,
+          lc_lastacceptedsubmission: s.lc_lastacceptedsubmission,
           lc_cur_streak: s.lc_cur_streak,
           lc_max_streak: s.lc_max_streak,
+          lc_badges: s.lc_badges,
+          lc_language: s.lc_language,
           gh_contribution_history: s.gh_contribution_history,
           lc_submission_history: s.lc_submission_history,
+          last_commit_day: s.last_commit_day,
           table_name: cls,
         }));
         return mapped;
@@ -250,6 +274,121 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     () => selected.map((id) => idMap.get(id)).filter(Boolean) as StudentWithClass[],
     [idMap, selected]
   );
+
+  // Helpers
+  const studentKey = (s: StudentWithClass) => `${s.table_name}:${s.roll_number}`;
+  const toTime = (v: string | undefined | null) => {
+    if (!v) return Number.NEGATIVE_INFINITY;
+    const t = new Date(v as string).getTime();
+    return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
+  };
+
+  type MetricKey =
+    | "git_followers"
+    | "git_following"
+    | "git_public_repo"
+    | "git_original_repo"
+    | "git_authored_repo"
+    | "last_commit_date"
+    | "lc_total_solved"
+    | "lc_easy"
+    | "lc_medium"
+    | "lc_hard"
+    | "lc_ranking"
+    | "lc_cur_streak"
+    | "lc_max_streak"
+    | "lc_lastsubmission"
+    | "lc_lastacceptedsubmission";
+
+  // Compute winners per metric (ties included). Higher-is-better for most; lower-is-better for ranking; newer-is-better for dates.
+  const winners = useMemo(() => {
+    const res: Record<MetricKey, Set<string>> = {
+      git_followers: new Set(),
+      git_following: new Set(),
+      git_public_repo: new Set(),
+      git_original_repo: new Set(),
+      git_authored_repo: new Set(),
+      last_commit_date: new Set(),
+      lc_total_solved: new Set(),
+      lc_easy: new Set(),
+      lc_medium: new Set(),
+      lc_hard: new Set(),
+      lc_ranking: new Set(),
+      lc_cur_streak: new Set(),
+      lc_max_streak: new Set(),
+      lc_lastsubmission: new Set(),
+      lc_lastacceptedsubmission: new Set(),
+    };
+
+    if (selectedStudents.length < 2) return res;
+
+    const maxBy = (getter: (s: StudentWithClass) => number, key: MetricKey) => {
+      let max = Number.NEGATIVE_INFINITY;
+      for (const s of selectedStudents) {
+        const v = getter(s);
+        if (v > max) max = v;
+      }
+      if (!Number.isFinite(max)) return;
+      for (const s of selectedStudents) {
+        const v = getter(s);
+        if (v === max) res[key].add(studentKey(s));
+      }
+    };
+
+    const minBy = (getter: (s: StudentWithClass) => number, key: MetricKey) => {
+      let min = Number.POSITIVE_INFINITY;
+      for (const s of selectedStudents) {
+        const v = getter(s);
+        if (v < min) min = v;
+      }
+      if (!Number.isFinite(min)) return;
+      for (const s of selectedStudents) {
+        const v = getter(s);
+        if (v === min) res[key].add(studentKey(s));
+      }
+    };
+
+    // GitHub numeric highs
+    maxBy((s) => Number(s.git_followers ?? 0), "git_followers");
+    maxBy((s) => Number(s.git_following ?? 0), "git_following");
+    maxBy((s) => Number(s.git_public_repo ?? 0), "git_public_repo");
+    maxBy((s) => Number(s.git_original_repo ?? 0), "git_original_repo");
+    maxBy((s) => Number(s.git_authored_repo ?? 0), "git_authored_repo");
+    // Latest commit date
+    maxBy((s) => toTime(s.last_commit_date), "last_commit_date");
+
+    // LeetCode highs
+    maxBy((s) => Number(s.lc_total_solved ?? 0), "lc_total_solved");
+    maxBy((s) => Number(s.lc_easy ?? 0), "lc_easy");
+    maxBy((s) => Number(s.lc_medium ?? 0), "lc_medium");
+    maxBy((s) => Number(s.lc_hard ?? 0), "lc_hard");
+    maxBy((s) => Number(s.lc_cur_streak ?? 0), "lc_cur_streak");
+    maxBy((s) => Number(s.lc_max_streak ?? 0), "lc_max_streak");
+    // Latest submission dates
+    maxBy((s) => toTime(s.lc_lastsubmission), "lc_lastsubmission");
+    maxBy((s) => toTime(s.lc_lastacceptedsubmission), "lc_lastacceptedsubmission");
+    // Ranking: lower is better (only if > 0)
+    minBy((s) => {
+      const r = Number(s.lc_ranking);
+      return Number.isFinite(r) && r > 0 ? r : Number.POSITIVE_INFINITY;
+    }, "lc_ranking");
+
+    return res;
+  }, [selectedStudents]);
+
+  const isWinner = (metric: MetricKey, s: StudentWithClass) => winners[metric].has(studentKey(s));
+  const winCls = (on: boolean) => (on ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "");
+  const fmtNum = (v: number | null | undefined) => (v ?? 0);
+  const fmtDate = (v: string | null | undefined) => {
+    const t = toTime(v ?? undefined);
+    if (!Number.isFinite(t) || t === Number.NEGATIVE_INFINITY) return "—";
+    try {
+      const d = new Date(t);
+      return d.toLocaleDateString(undefined, { year: "2-digit", month: "short", day: "numeric" });
+    } catch {
+      return "—";
+    }
+  };
 
   const toggle = (cls: string, roll: number) => {
     const id = `${cls}:${roll}`;
@@ -433,7 +572,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                 const gh30 = computeSeries(s.gh_contribution_history, range, customRange);
                 const lc30 = computeSeries(s.lc_submission_history, range, customRange);
                 return (
-                  <div key={s.roll_number} className="space-y-4">
+                  <div key={studentKey(s)} className="space-y-4">
                     <Card className="bg-gradient-card">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-base truncate">{s.name}</CardTitle>
@@ -471,15 +610,35 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                         <CardContent className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Followers</span>
-                            <span className="font-medium">{s.git_followers ?? 0}</span>
+                            <span className={`font-medium ${winCls(isWinner('git_followers', s))}`}>{fmtNum(s.git_followers)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Following</span>
+                            <span className={`font-medium ${winCls(isWinner('git_following', s))}`}>{fmtNum(s.git_following)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Public Repos</span>
-                            <span className="font-medium">{s.git_public_repo ?? 0}</span>
+                            <span className={`font-medium ${winCls(isWinner('git_public_repo', s))}`}>{fmtNum(s.git_public_repo)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Forked Authored</span>
-                            <span className="font-medium">{s.git_authored_repo ?? 0}</span>
+                            <span className="text-muted-foreground">Original Repos</span>
+                            <span className={`font-medium ${winCls(isWinner('git_original_repo', s))}`}>{fmtNum(s.git_original_repo)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Authored Repos</span>
+                            <span className={`font-medium ${winCls(isWinner('git_authored_repo', s))}`}>{fmtNum(s.git_authored_repo)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Last Commit Date</span>
+                            <span className={`font-medium ${winCls(isWinner('last_commit_date', s))}`}>{fmtDate(s.last_commit_date)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Last Commit Day</span>
+                            <span className="font-medium">{s.last_commit_day || '—'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Badges</span>
+                            <span className="font-medium truncate max-w-[10rem]" title={s.git_badges || undefined}>{s.git_badges || '—'}</span>
                           </div>
                         </CardContent>
                       </Card>
@@ -491,15 +650,47 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                         <CardContent className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Solved</span>
-                            <span className="font-medium">{s.lc_total_solved ?? 0}</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_total_solved', s))}`}>{fmtNum(s.lc_total_solved)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Easy</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_easy', s))}`}>{fmtNum(s.lc_easy)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Medium</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_medium', s))}`}>{fmtNum(s.lc_medium)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Hard</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_hard', s))}`}>{fmtNum(s.lc_hard)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Rank</span>
-                            <span className="font-medium">{s.lc_ranking ?? "N/A"}</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_ranking', s))}`}>{Number(s.lc_ranking) > 0 ? s.lc_ranking : 'N/A'}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Streak</span>
-                            <span className="font-medium">{s.lc_cur_streak ?? 0} / {s.lc_max_streak ?? 0}</span>
+                            <span className="text-muted-foreground">Current Streak</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_cur_streak', s))}`}>{fmtNum(s.lc_cur_streak)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Max Streak</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_max_streak', s))}`}>{fmtNum(s.lc_max_streak)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Last Submission</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_lastsubmission', s))}`}>{fmtDate(s.lc_lastsubmission)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Last Accepted</span>
+                            <span className={`font-medium ${winCls(isWinner('lc_lastacceptedsubmission', s))}`}>{fmtDate(s.lc_lastacceptedsubmission)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Language</span>
+                            <span className="font-medium truncate max-w-[10rem]" title={s.lc_language || undefined}>{s.lc_language || '—'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Badges</span>
+                            <span className="font-medium truncate max-w-[10rem]" title={s.lc_badges || undefined}>{s.lc_badges || '—'}</span>
                           </div>
                         </CardContent>
                       </Card>
