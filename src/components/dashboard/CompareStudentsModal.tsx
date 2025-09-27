@@ -289,6 +289,10 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     const raw = String(val).trim();
     if (!raw || /^(?:—|-|n\/?a|null|undefined)$/i.test(raw)) return 0;
 
+    // Explicit zero-like forms should map to 0 (fix: previously could return 1)
+    if (/^0+$/.test(raw)) return 0;
+    if (/^\[?\s*0\s*\]?$/.test(raw)) return 0;
+
     // Try strict JSON first
     try {
       const parsed = JSON.parse(raw);
@@ -300,9 +304,11 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
           const arr: unknown = (parsed as any)[k];
           if (Array.isArray(arr)) return arr.filter(Boolean).length;
         }
-        // Object of counts e.g. { gold: 2, silver: 1 }
-        const nums = Object.values(parsed).map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0);
-        if (nums.length) return nums.reduce((a, b) => a + b, 0);
+        // Object of counts e.g. { gold: 2, silver: 1 } — include zeros
+        const numsAll = Object.values(parsed)
+          .map((v) => Number(v))
+          .filter((n) => Number.isFinite(n) && n >= 0);
+        if (numsAll.length) return numsAll.reduce((a, b) => a + b, 0);
       }
     } catch {}
 
@@ -320,20 +326,38 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       return parts.length;
     }
 
-    // Heuristic: key:value counts e.g. gold:2,silver:1
-    const nums = raw.match(/\d+/g)?.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n > 0) || [];
-    if (nums.length) {
-      const sum = nums.reduce((a, b) => a + b, 0);
-      if (sum > 0) return sum;
+    // Heuristic: numeric counts in the string
+    const digitMatches = raw.match(/\d+/g);
+    if (digitMatches && digitMatches.length) {
+      const numsAll = digitMatches.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n >= 0);
+      const sum = numsAll.reduce((a, b) => a + b, 0);
+      // If the context mentions badges or the string is numbers-only-ish, trust the numeric sum (can be 0)
+      if (/badge/i.test(raw) || /^[\s,;|0-9]+$/.test(raw)) {
+        return sum;
+      }
+      // Otherwise, only use this heuristic when it clearly expresses a count (single number)
+      if (numsAll.length === 1) return sum;
     }
 
     // Heuristic: repeated word 'badge'
     const badgeHits = raw.match(/badge/gi);
-    if (badgeHits && badgeHits.length) return badgeHits.length;
+    if (badgeHits && badgeHits.length) {
+      // If it says "0 badge(s)", don't count as 1
+      if (/\b0\s*badge/i.test(raw)) return 0;
+      return badgeHits.length;
+    }
 
-    // Delimited fallback
+    // Delimited fallback: if tokens are numeric-like, use their sum; otherwise count items
     const parts = raw.split(/[|,;\n]+/).map((t) => t.trim()).filter(Boolean);
-    return parts.length; // if no delimiter found, returns 0 which is safer than always 1
+    if (parts.length) {
+      const numericParts = parts.map((p) => ( /^\d+$/.test(p) ? Number(p) : NaN ));
+      const allNumeric = numericParts.every((n) => Number.isFinite(n));
+      if (allNumeric) {
+        const sum = (numericParts as number[]).reduce((a, b) => a + b, 0);
+        return sum; // can be 0
+      }
+    }
+    return parts.length; // if no delimiter found or mixed text, fall back to item count
   };
 
   type MetricKey =
