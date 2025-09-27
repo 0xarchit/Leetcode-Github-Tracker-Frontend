@@ -6,6 +6,7 @@ import StudentTable from './StudentTable';
 import GithubDetailsModal from './GithubDetailsModal';
 import LeetcodeDetailsModal from './LeetcodeDetailsModal';
 import SettingsModal from './SettingsModal';
+import CompareStudentsModal from './CompareStudentsModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, AlertCircle, Database } from 'lucide-react';
 
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const [selectedStudentForGithub, setSelectedStudentForGithub] = useState<Student | null>(null);
   const [selectedStudentForLeetcode, setSelectedStudentForLeetcode] = useState<Student | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -101,6 +103,10 @@ const Dashboard = () => {
     setIsSettingsOpen(true);
   };
 
+  const handleOpenCompare = () => {
+    setIsCompareOpen(true);
+  };
+
   if (initialLoading) {
     return (
       <div className="min-h-screen bg-dashboard-content flex items-center justify-center">
@@ -121,6 +127,7 @@ const Dashboard = () => {
         selectedTable={selectedTable}
         onTableSelect={handleTableSelect}
         onOpenSettings={handleOpenSettings}
+        onOpenCompare={handleOpenCompare}
       />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -183,6 +190,12 @@ const Dashboard = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         selectedTable={selectedTable}
+      />
+
+      <CompareStudentsModal
+        isOpen={isCompareOpen}
+        onClose={() => setIsCompareOpen(false)}
+        students={students}
       />
     </div>
   );

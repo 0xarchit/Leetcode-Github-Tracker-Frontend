@@ -28,6 +28,7 @@ interface TopNavigationProps {
   selectedTable: string | null;
   onTableSelect: (table: string) => void;
   onOpenSettings: () => void;
+  onOpenCompare: () => void;
 }
 
 const TopNavigation: React.FC<TopNavigationProps> = ({
@@ -35,6 +36,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   selectedTable,
   onTableSelect,
   onOpenSettings,
+  onOpenCompare,
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
@@ -92,7 +94,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   return (
     <div className="bg-dashboard-nav border-b border-border shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+  <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo & Title */}
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
@@ -105,7 +107,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
           </div>
 
           {/* Center - Table Selector */}
-          <div className="flex-1 max-w-xs sm:max-w-md mx-4 sm:mx-8">
+          <div className="flex-1 min-w-0 max-w-[9rem] sm:max-w-md mx-2 sm:mx-8">
             <Select value={selectedTable || ""} onValueChange={onTableSelect}>
               <SelectTrigger className="bg-background border-border text-sm">
                 <SelectValue placeholder="Select class" />
@@ -120,17 +122,44 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </Select>
           </div>
 
-          {/* Right Side - Notifications, Settings, User */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Right Side - Compare, Notifications, Settings, User */}
+          <div className="flex items-center space-x-1 sm:space-x-4">
+            {/* Compare Students */}
+            {/* Compare: icon on mobile, text on desktop */}
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onOpenCompare}
+                className="sm:hidden text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
+                aria-label="Compare students"
+                title="Compare students"
+              >
+                {/* Simple compare arrows using SVG to avoid adding a dependency */}
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="17 7 12 2 7 7"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="22"></line>
+                  <polyline points="7 17 12 22 17 17"></polyline>
+                </svg>
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={onOpenCompare}
+                className="hidden sm:inline-flex"
+              >
+                Compare
+              </Button>
+            </div>
             {/* Notifications */}
             <DropdownMenu open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="relative text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
-                  <Bell className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="relative h-8 w-8 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
+                  <Bell className="h-4 w-4" />
                   {notifications.length > 0 && (
                     <Badge 
                       variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                      className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
                     >
                       {notifications.length}
                     </Badge>
@@ -199,23 +228,23 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </DropdownMenu>
 
             {/* Theme Toggle */}
-            <ThemeToggle className="text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10" />
+            <ThemeToggle className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10" />
 
             {/* Settings */}
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="icon" 
               onClick={onOpenSettings}
-              className="text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
+              className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
             >
-              <Settings className="h-5 w-5" />
+              <Settings className="h-4 w-4" />
             </Button>
 
             {/* User Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
+                  <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center">
                     <span className="text-xs font-medium text-primary-foreground">
                       {user?.email?.[0]?.toUpperCase()}
                     </span>
