@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import PublicClass from "./pages/PublicClass";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
+import SiteFooter from "@/components/site-footer";
 
 const queryClient = new QueryClient();
 
@@ -24,32 +25,47 @@ const AppContent = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dashboard-content flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-dashboard-content flex flex-col">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
         </div>
+        <SiteFooter />
       </div>
     );
   }
 
   // If coming from Supabase recovery/invite links, show password update regardless of session
   if (flowType === "recovery" || flowType === "invite") {
-    return <PasswordUpdate />;
+    return (
+      <div className="min-h-screen bg-dashboard-content flex flex-col">
+        <div className="flex-1">
+          <PasswordUpdate />
+        </div>
+        <SiteFooter />
+      </div>
+    );
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-  <Route path="/" element={user ? <Dashboard /> : <AuthPage />} />
-  <Route path="/auth" element={<AuthPage />} />
-  {/* Public read-only class page (query param controlled) */}
-  <Route path="/classes" element={<PublicClass />} />
-  <Route path="/auth/update-password" element={<PasswordUpdate />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <div className="min-h-screen bg-dashboard-content flex flex-col">
+      <div className="flex-1">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={user ? <Dashboard /> : <AuthPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            {/* Public read-only class page (query param controlled) */}
+            <Route path="/classes" element={<PublicClass />} />
+            <Route path="/auth/update-password" element={<PasswordUpdate />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+      <SiteFooter />
+    </div>
   );
 };
 
