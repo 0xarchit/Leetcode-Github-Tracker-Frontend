@@ -11,7 +11,15 @@ export default defineConfig(({ mode }) => {
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: null, // we manually call registerSW in main.tsx
-      includeAssets: ["icons/icon-192.svg", "icons/icon-512.svg", "robots.txt"],
+      includeAssets: [
+        "icons/logo192.png",
+        "icons/logo512.png",
+        "icons/favicon-16x16.png",
+        "icons/favicon-32x32.png",
+        "icons/favicon.ico",
+        "icons/apple-touch-icon.png",
+        "robots.txt",
+      ],
       workbox: {
         navigateFallback: "/index.html",
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest}"],

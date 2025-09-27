@@ -1,6 +1,6 @@
 {
-  "name": "Student Tracker",
-  "short_name": "Tracker",
+  "name": "Student Tracker - TrackBoard",
+  "short_name": "TrackBoard",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -11,13 +11,13 @@
     {
       "src": "/icons/logo192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
       "src": "/icons/logo512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

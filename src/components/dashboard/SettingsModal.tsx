@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Settings, RefreshCw, Database, Trash2, Download } from 'lucide-react';
+import { APP_VERSION } from '@/version';
 import { useToast } from '@/hooks/use-toast';
 import { apiService, type LastUpdateEntry } from '@/services/api';
 import { cacheService } from '@/services/cacheService';
@@ -306,12 +307,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   }
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  {isStandalone ? 'Installed' : deferredPrompt ? 'Install App' : 'Installed'}
+                  {isStandalone ? `Installed ${APP_VERSION}` : deferredPrompt ? `Install ${APP_VERSION}` : `Installed ${APP_VERSION}`}
                 </Button>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-muted-foreground">Version:</span>
-                <span className="text-sm">v2.0.0</span>
+                <span className="text-sm">{APP_VERSION}</span>
               </div>
             </CardContent>
           </Card>
