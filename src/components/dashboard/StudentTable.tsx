@@ -290,7 +290,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
                         {student.roll_number}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {student.name}
+                        {student.name.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center space-y-1">
