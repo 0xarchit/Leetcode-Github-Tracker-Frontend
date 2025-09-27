@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Student, apiService } from "@/services/api";
-import { Users, GitBranch, Star, Folder, Target, Trophy, Flame, Calendar, Github, Code2 } from "lucide-react";
+import { Users, GitBranch, Star, Folder, Target, Trophy, Flame, Calendar, Github, Code2, Crown } from "lucide-react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -290,6 +290,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     | "git_original_repo"
     | "git_authored_repo"
     | "last_commit_date"
+    | "git_badges_count"
     | "lc_total_solved"
     | "lc_easy"
     | "lc_medium"
@@ -297,6 +298,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     | "lc_ranking"
     | "lc_cur_streak"
     | "lc_max_streak"
+    | "lc_badges_count"
     | "lc_lastsubmission"
     | "lc_lastacceptedsubmission";
 
@@ -309,6 +311,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       git_original_repo: new Set(),
       git_authored_repo: new Set(),
       last_commit_date: new Set(),
+      git_badges_count: new Set(),
       lc_total_solved: new Set(),
       lc_easy: new Set(),
       lc_medium: new Set(),
@@ -316,6 +319,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       lc_ranking: new Set(),
       lc_cur_streak: new Set(),
       lc_max_streak: new Set(),
+      lc_badges_count: new Set(),
       lc_lastsubmission: new Set(),
       lc_lastacceptedsubmission: new Set(),
     };
@@ -356,6 +360,19 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     maxBy((s) => Number(s.git_authored_repo ?? 0), "git_authored_repo");
     // Latest commit date
     maxBy((s) => toTime(s.last_commit_date), "last_commit_date");
+    // GitHub badges count (higher is better)
+    const countBadges = (val?: string | null) => {
+      if (!val) return 0;
+      try {
+        const parsed = JSON.parse(val as string);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
+      } catch {}
+      return String(val)
+        .split(/[|,;]+/)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && t !== "—").length;
+    };
+    maxBy((s) => countBadges(s.git_badges), "git_badges_count");
 
     // LeetCode highs
     maxBy((s) => Number(s.lc_total_solved ?? 0), "lc_total_solved");
@@ -367,6 +384,8 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     // Latest submission dates
     maxBy((s) => toTime(s.lc_lastsubmission), "lc_lastsubmission");
     maxBy((s) => toTime(s.lc_lastacceptedsubmission), "lc_lastacceptedsubmission");
+    // LC badges count (higher is better)
+    maxBy((s) => countBadges(s.lc_badges), "lc_badges_count");
     // Ranking: lower is better (only if > 0)
     minBy((s) => {
       const r = Number(s.lc_ranking);
@@ -389,6 +408,23 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       return "—";
     }
   };
+
+  // Compute overall champion(s): student(s) who win the most metrics
+  const championIds = useMemo(() => {
+    const counts = new Map<string, number>();
+    const metrics = Object.keys(winners) as MetricKey[];
+    for (const m of metrics) {
+      const set = winners[m];
+      for (const id of set) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+    }
+    let max = 0;
+    for (const v of counts.values()) max = Math.max(max, v);
+    if (max <= 0) return new Set<string>();
+    return new Set([...counts.entries()].filter(([, v]) => v === max).map(([k]) => k));
+  }, [winners]);
+  const isChampion = (s: StudentWithClass) => championIds.has(studentKey(s));
 
   const toggle = (cls: string, roll: number) => {
     const id = `${cls}:${roll}`;
@@ -575,7 +611,12 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                   <div key={studentKey(s)} className="space-y-4">
                     <Card className="bg-gradient-card">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base truncate">{s.name}</CardTitle>
+                        <CardTitle className="text-base truncate flex items-center gap-1">
+                          {isChampion(s) && (
+                            <Crown className="h-4 w-4 text-yellow-500" aria-label="Top performer" />
+                          )}
+                          <span className="truncate">{s.name}</span>
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="text-sm space-y-2">
                         <div className="text-muted-foreground">Roll: {s.roll_number}</div>
@@ -638,7 +679,19 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                           </div>
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Badges</span>
-                            <span className="font-medium truncate max-w-[10rem]" title={s.git_badges || undefined}>{s.git_badges || '—'}</span>
+                            <span
+                              className={`font-medium ${winCls(isWinner('git_badges_count', s))}`}
+                              title={s.git_badges || undefined}
+                            >
+                              {(() => {
+                                try {
+                                  const parsed = s.git_badges ? JSON.parse(s.git_badges) : null;
+                                  if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
+                                } catch {}
+                                const val = s.git_badges || '';
+                                return val.split(/[|,;]+/).map(t=>t.trim()).filter(t=>t && t !== '—').length;
+                              })()}
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
@@ -685,12 +738,13 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                             <span className={`font-medium ${winCls(isWinner('lc_lastacceptedsubmission', s))}`}>{fmtDate(s.lc_lastacceptedsubmission)}</span>
                           </div>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Language</span>
-                            <span className="font-medium truncate max-w-[10rem]" title={s.lc_language || undefined}>{s.lc_language || '—'}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Badges</span>
-                            <span className="font-medium truncate max-w-[10rem]" title={s.lc_badges || undefined}>{s.lc_badges || '—'}</span>
+                            <span
+                              className={`font-medium ${winCls(isWinner('lc_badges_count', s))} truncate max-w-[10rem]`}
+                              title={s.lc_badges || undefined}
+                            >
+                              {s.lc_badges || '—'}
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
