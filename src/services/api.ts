@@ -119,11 +119,19 @@ class ApiService {
 
   async getStudentData(
     tableName: string,
-    options?: { useCachedLastUpdate?: boolean }
+    options?: {
+      useCachedLastUpdate?: boolean;
+      skipCacheValidation?: boolean;
+      cacheOnly?: boolean;
+    }
   ): Promise<Student[]> {
     const cacheKey = `student_data_${tableName}`;
     const cached = cacheService.get<Student[]>(cacheKey);
     if (cached && !cacheService.isForceRefresh()) {
+      // If caller wants to skip any validation, just return cached data
+      if (options?.skipCacheValidation) {
+        return cached;
+      }
       // Before trusting cache, compare with last update time for this table
       try {
         const lastUpdates = options?.useCachedLastUpdate
@@ -162,6 +170,11 @@ class ApiService {
         // If lastUpdate fails, fall back to cached data
         return cached;
       }
+    }
+
+    // If caller explicitly wants cache-only behavior, avoid network and return empty when absent
+    if (options?.cacheOnly) {
+      return [];
     }
 
     const result = await this.request<Student[]>("/data", {

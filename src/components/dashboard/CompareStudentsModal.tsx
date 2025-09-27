@@ -160,7 +160,11 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       try {
         const resp = await apiService.getAvailableTables();
         const classes = resp.tables || [];
-        if (!cancelled) setAvailableClasses(classes);
+        if (!cancelled) {
+          setAvailableClasses(classes);
+          // Keep default as 'All' unless user already chose something else earlier in this session
+          setSelectedClass((prev) => (prev ? prev : 'All'));
+        }
       } finally {
         if (!cancelled) setLoadingClasses(false);
       }
@@ -172,9 +176,12 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
   // Load students for selected class or all classes
   useEffect(() => {
     let cancelled = false;
-    const loadForClass = async (cls: string) => {
+    const loadForClass = async (cls: string, opts?: { cacheOnly?: boolean }) => {
       try {
-        const list = await apiService.getStudentData(cls);
+        const list = await apiService.getStudentData(cls, opts?.cacheOnly
+          ? { cacheOnly: true, skipCacheValidation: true }
+          : undefined
+        );
         const mapped: StudentWithClass[] = list.map((s) => ({
           name: s.name,
           roll_number: s.roll_number,
@@ -214,10 +221,11 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       setLoadingStudents(true);
       try {
         if (selectedClass === 'All') {
+          // In 'All' mode: do NOT call network. Only pull from cache if available.
           const results = await Promise.all(
             availableClasses.map(async (cls) => {
               if (dataByClass[cls]) return [cls, dataByClass[cls]] as const;
-              const data = await loadForClass(cls);
+              const data = await loadForClass(cls, { cacheOnly: true });
               return [cls, data] as const;
             })
           );
