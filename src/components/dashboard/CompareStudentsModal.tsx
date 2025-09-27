@@ -710,7 +710,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
                             size="sm"
                             variant="outline"
                             disabled={!s.leetcode_username}
-                            onClick={() => s.leetcode_username && window.open(`https://leetcode.com/${s.leetcode_username}`, '_blank')}
+                            onClick={() => s.leetcode_username && window.open(`https://leetcode.com/u/${s.leetcode_username}`, '_blank')}
                           >
                             <Code2 className="h-4 w-4 mr-2 sm:mr-2" />
                             <span className="hidden sm:inline">LeetCode Profile</span>

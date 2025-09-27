@@ -217,7 +217,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               variant="outline"
               size="sm"
               className="mx-auto w-full sm:w-auto justify-center mt-2 sm:mt-0"
-              onClick={() => hasUsername && window.open(`https://leetcode.com/${student.leetcode_username}`, '_blank')}
+              onClick={() => hasUsername && window.open(`https://leetcode.com/u/${student.leetcode_username}`, '_blank')}
               disabled={!hasUsername}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
