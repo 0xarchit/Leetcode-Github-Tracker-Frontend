@@ -176,12 +176,25 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
   // Load students for selected class or all classes
   useEffect(() => {
     let cancelled = false;
-    const loadForClass = async (cls: string, opts?: { cacheOnly?: boolean }) => {
+    const loadForClass = async (
+      cls: string,
+      opts?: { cacheOnly?: boolean; fastNetwork?: boolean }
+    ) => {
       try {
-        const list = await apiService.getStudentData(cls, opts?.cacheOnly
-          ? { cacheOnly: true, skipCacheValidation: true }
-          : undefined
-        );
+        let list: Student[];
+        if (opts?.cacheOnly) {
+          list = await apiService.getStudentData(cls, {
+            cacheOnly: true,
+            skipCacheValidation: true,
+          });
+        } else if (opts?.fastNetwork) {
+          list = await apiService.getStudentData(cls, {
+            useCachedLastUpdate: true,
+            skipCacheValidation: true,
+          });
+        } else {
+          list = await apiService.getStudentData(cls);
+        }
         const mapped: StudentWithClass[] = list.map((s) => ({
           name: s.name,
           roll_number: s.roll_number,
@@ -221,11 +234,13 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       setLoadingStudents(true);
       try {
         if (selectedClass === 'All') {
-          // In 'All' mode: do NOT call network. Only pull from cache if available.
           const results = await Promise.all(
             availableClasses.map(async (cls) => {
               if (dataByClass[cls]) return [cls, dataByClass[cls]] as const;
-              const data = await loadForClass(cls, { cacheOnly: true });
+              let data = await loadForClass(cls, { cacheOnly: true });
+              if (!data.length) {
+                data = await loadForClass(cls, { fastNetwork: true });
+              }
               return [cls, data] as const;
             })
           );
