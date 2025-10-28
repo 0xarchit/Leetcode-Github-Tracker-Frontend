@@ -13,6 +13,7 @@ This frontend application provides a centralized interface to track and visualiz
 - **Comprehensive Dashboard**: View sortable, searchable, and paginated tables of student data for different classes.
 - **Detailed Student Insights**: Click on any student to open detailed modals for their GitHub and LeetCode statistics, including contribution history, repositories, problem-solving stats, and streaks.
 - **Student Comparison**: Select 2-3 students to compare their key metrics side-by-side, including activity charts over various time ranges (7d, 30d, 1y, etc.).
+- **Stats Workspace (/stats)**: Pick any class, adjust the top-N (up to 15) students, and explore GitHub-only, LeetCode-only, and blended charts alongside a 16-metric comparison grid for the last 30 days.
 - **Multi-Class Support**: Seamlessly switch between different class datasets or view all students at once (with efficient cache-first loading).
 - **Admin Controls**: A settings panel allows for forcing database updates, clearing cached data, and viewing system status.
 - **PWA Ready**: Fully installable on desktop and mobile for a native app experience, with offline capabilities.

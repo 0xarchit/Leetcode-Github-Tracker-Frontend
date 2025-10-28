@@ -43,7 +43,7 @@ export function ThemeProvider({
         root.classList.add(systemTheme)
       }
       apply()
-      // Keep in sync when OS theme changes
+      
       media.addEventListener?.("change", apply)
       return () => media.removeEventListener?.("change", apply)
     }

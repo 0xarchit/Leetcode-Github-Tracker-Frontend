@@ -50,7 +50,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
   onClose,
 }) => {
   if (!student) return null;
-  // Chart data prep
+  
   type RangeKey = '7d' | '30d' | '365d' | 'all' | 'custom';
   const [range, setRange] = useState<RangeKey>('30d');
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
@@ -75,14 +75,14 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
       .filter(([d, v]) => Number.isFinite(d.getTime()) && Number.isFinite(v))
       .sort((a, b) => a[0].getTime() - b[0].getTime());
 
-    // Build a map for fast lookup by YYYY-MM-DD
+    
     const valueByDate = new Map<string, number>();
     for (const [d, v] of parsed) {
       const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
       valueByDate.set(key, v);
     }
 
-    // Determine range
+    
     const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let start: Date | null = null;
@@ -98,7 +98,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
       start = new Date(today.getTime() - 365 * DAY_MS);
       end = today;
     } else if (range === 'custom') {
-      // Default to last 7 days if no selection
+      
       if (!customRange?.from && !customRange?.to) {
         end = today;
         start = new Date(today.getTime() - 6 * DAY_MS);
@@ -108,7 +108,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
         start = s ? new Date(s.getFullYear(), s.getMonth(), s.getDate()) : null;
         end = e ? new Date(e.getFullYear(), e.getMonth(), e.getDate()) : null;
       }
-      // Clamp to today (no future dates)
+      
       if (end && end > today) end = today;
       if (start && start > today) start = today;
     } else if (range === 'all') {
@@ -122,7 +122,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
 
     if (!start || !end) return [] as { date: string; count: number }[];
 
-    // Build continuous daily series, fill missing dates with 0
+    
     const out: { date: string; count: number }[] = [];
     for (let t = start.getTime(); t <= end.getTime(); t += DAY_MS) {
       const d = new Date(t);
@@ -157,7 +157,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return null;
     const today = new Date();
-    // Set both dates to start of day to get accurate day difference
+    
     date.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     const diffTime = Math.abs(today.getTime() - date.getTime());
@@ -227,7 +227,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Submissions Chart */}
+          {}
           <Card className="bg-gradient-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">LeetCode Submissions</CardTitle>
@@ -279,7 +279,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               </ChartContainer>
             </CardContent>
           </Card>
-          {/* Main Stats */}
+          {}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card className="bg-gradient-card">
               <CardContent className="p-3 sm:p-4 text-center">
@@ -322,7 +322,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
             </Card>
           </div>
 
-          {/* Problem Difficulty Breakdown */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-base">
@@ -374,7 +374,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Activity & Languages */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -434,7 +434,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
             </Card>
           </div>
 
-          {/* Badges */}
+          {}
           {badges.length > 0 && (
             <Card>
               <CardHeader>

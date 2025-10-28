@@ -1,13 +1,13 @@
 interface CacheItem<T> {
   data: T;
-  timestamp: number; // epoch ms
-  expiresIn: number; // ms
+  timestamp: number;
+  expiresIn: number;
 }
 
 class CacheService {
   private readonly HOUR_IN_MS = 60 * 60 * 1000;
   private readonly PREFIX = "cache:";
-  // Backward-compatibility: older keys were stored without the colon
+
   private readonly LEGACY_PREFIX = "cache";
 
   private hasStorage(): boolean {
@@ -41,9 +41,7 @@ class CacheService {
     if (this.hasStorage()) {
       try {
         window.localStorage.setItem(this.k(key), JSON.stringify(item));
-      } catch {
-        // If storage is full or blocked, silently ignore
-      }
+      } catch {}
     }
   }
 
@@ -51,7 +49,7 @@ class CacheService {
     if (!this.hasStorage()) return null;
     try {
       let raw = window.localStorage.getItem(this.k(key));
-      // Fallback to legacy key format without colon
+
       if (!raw) raw = window.localStorage.getItem(this.legacyK(key));
       if (!raw) return null;
       const item = JSON.parse(raw) as CacheItem<T>;
@@ -70,7 +68,6 @@ class CacheService {
       }
       return item.data as T;
     } catch {
-      // Corrupt entry, remove it
       try {
         window.localStorage.removeItem(this.k(key));
       } catch {}
@@ -104,9 +101,7 @@ class CacheService {
         }
       }
       keysToRemove.forEach((k) => window.localStorage.removeItem(k));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   remove(key: string): void {
@@ -114,9 +109,7 @@ class CacheService {
     try {
       window.localStorage.removeItem(this.k(key));
       window.localStorage.removeItem(this.legacyK(key));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   clearExpired(): void {
@@ -139,13 +132,9 @@ class CacheService {
         }
       }
       keysToRemove.forEach((k) => window.localStorage.removeItem(k));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
-  // We only want to refresh when admin presses "Force Update", not on browser reloads.
-  // Keep method for backward compatibility but always return false.
   isForceRefresh(): boolean {
     return false;
   }

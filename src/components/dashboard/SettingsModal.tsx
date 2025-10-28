@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-// Removed Input & Label as admin management is no longer handled here
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Settings, RefreshCw, Database, Trash2, Download } from 'lucide-react';
@@ -31,7 +31,7 @@ interface SettingsModalProps {
   selectedTable: string | null;
 }
 
-// Admin management removed; handled manually in Supabase as requested
+
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -60,12 +60,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleConfirmForceUpdate = () => {
     if (!selectedTable) return;
-    // Fire-and-forget: trigger the update without blocking UI
+    
     try {
       void apiService
         .updateDatabase(selectedTable)
         .then(() => {
-          // Optional: could update a last-triggered timestamp here
+          
         })
         .catch((err) => {
           console.error('Update request error (non-blocking):', err);
@@ -83,7 +83,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleClearCache = () => {
     try {
-      // Clear only specific cache entries
+      
       cacheService.remove('available_tables');
       if (selectedTable) {
         cacheService.remove(`student_data_${selectedTable}`);
@@ -121,21 +121,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  // PWA install capture and detection
+  
   useEffect(() => {
-    // subscribe to global installed state changes
+    
     const setFromGlobal = () => {
       setIsStandalone(Boolean((window as any).__PWA_IS_INSTALLED));
     };
     setFromGlobal();
     window.addEventListener('pwa:installed-state-changed', setFromGlobal as any);
-    // end subscription on unmount
+    
     return () => {
       window.removeEventListener('pwa:installed-state-changed', setFromGlobal as any);
     };
   }, []);
 
-  // Recompute installed state when modal opens
+  
   useEffect(() => {
     if (!isOpen) return;
     const computeStandalone = () => {
@@ -153,10 +153,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
-    // Helper to detect installed PWA across platforms and display modes
+    
     const computeStandalone = () => {
       try {
-        const iosStandalone = (navigator as any).standalone === true; // iOS Safari
+        const iosStandalone = (navigator as any).standalone === true; 
         const modes = ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'];
         const mediaMatch = modes.some((m) => window.matchMedia && window.matchMedia(`(display-mode: ${m})`).matches);
         return iosStandalone || mediaMatch;
@@ -165,7 +165,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     };
 
-    // Seed any globally captured prompt
+    
     setDeferredPrompt((window as any).__deferredPWAInstallPrompt || null);
     const onAvailable = () => setDeferredPrompt((window as any).__deferredPWAInstallPrompt || null);
     const onInstalled = () => {
@@ -201,9 +201,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const onInstallClick = async () => {
     try {
       const promptEvt = deferredPrompt || (window as any).__deferredPWAInstallPrompt;
-      if (!promptEvt) return; // nothing to do if not available yet
+      if (!promptEvt) return; 
       promptEvt.prompt();
-      await promptEvt.userChoice; // let the browser handle UI; no toast
+      await promptEvt.userChoice; 
       setDeferredPrompt(null);
       (window as any).__deferredPWAInstallPrompt = null;
     } catch {}
@@ -241,7 +241,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Database Management */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-base">
@@ -274,7 +274,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* System Information */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-base">
@@ -317,7 +317,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </CardContent>
           </Card>
         </div>
-        {/* Confirm Force Update */}
+        {}
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -335,7 +335,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Cache & Storage */}
+        {}
         <div className="mt-6">
           <Card>
             <CardHeader>
@@ -356,7 +356,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </Card>
         </div>
 
-        {/* Last Updates */}
+        {}
         <div className="mt-6">
           <Card>
             <CardHeader>

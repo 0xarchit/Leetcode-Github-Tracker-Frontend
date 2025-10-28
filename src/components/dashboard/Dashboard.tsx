@@ -12,13 +12,14 @@ import { Loader2, AlertCircle, Database } from 'lucide-react';
 
 const Dashboard = () => {
   const LAST_TABLE_KEY = 'student-tracker:last-table';
+  const ALL_CLASSES_KEY = '__all_classes__';
   const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   
-  // Modal states
+  
   const [selectedStudentForGithub, setSelectedStudentForGithub] = useState<Student | null>(null);
   const [selectedStudentForLeetcode, setSelectedStudentForLeetcode] = useState<Student | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -41,11 +42,11 @@ const Dashboard = () => {
       const response = await apiService.getAvailableTables();
       setAvailableTables(response.tables);
       
-      // Prefer last selected table from localStorage, else first available
+      
       if (response.tables.length > 0 && !selectedTable) {
         try {
           const saved = localStorage.getItem(LAST_TABLE_KEY);
-          if (saved && response.tables.includes(saved)) {
+          if (saved && (saved === ALL_CLASSES_KEY || response.tables.includes(saved))) {
             setSelectedTable(saved);
           } else {
             setSelectedTable(response.tables[0]);
@@ -68,9 +69,101 @@ const Dashboard = () => {
 
   const loadStudentData = async (tableName: string) => {
     setLoading(true);
+    
+    
+    if (tableName === ALL_CLASSES_KEY) {
+      try {
+        const allStudentsData: Student[] = [];
+        const classesToFetch: string[] = [];
+        
+        
+        for (const className of availableTables) {
+          try {
+            const cachedData = await apiService.getStudentData(className, {
+              cacheOnly: true,
+              skipCacheValidation: true,
+            });
+            if (cachedData && cachedData.length > 0) {
+              
+              const dataWithSection = cachedData.map(student => ({
+                ...student,
+                section: className.replace(/_/g, " "),
+              }));
+              allStudentsData.push(...dataWithSection);
+            } else {
+              classesToFetch.push(className);
+            }
+          } catch {
+            classesToFetch.push(className);
+          }
+        }
+        
+        
+        if (classesToFetch.length > 0) {
+          const fetchPromises = classesToFetch.map(className =>
+            apiService.getStudentData(className).then(data => ({
+              className,
+              data: data || [],
+            })).catch(() => ({
+              className,
+              data: [] as Student[],
+            }))
+          );
+          
+          const fetchedResults = await Promise.all(fetchPromises);
+          fetchedResults.forEach(({ className, data }) => {
+            if (data && data.length > 0) {
+              
+              const dataWithSection = data.map(student => ({
+                ...student,
+                section: className.replace(/_/g, " "),
+              }));
+              allStudentsData.push(...dataWithSection);
+            }
+          });
+        }
+        
+        setStudents(allStudentsData);
+      } catch (error) {
+        console.error('Failed to load all classes data:', error);
+        toast({
+          variant: "destructive",
+          title: "Data Load Error",
+          description: `Failed to load data for all classes. Please try again.`,
+        });
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    
     try {
-      const data = await apiService.getStudentData(tableName);
-      setStudents(data);
+      
+      const cachedData = await apiService.getStudentData(tableName, {
+        cacheOnly: true,
+        skipCacheValidation: true,
+      });
+      
+      if (cachedData && cachedData.length > 0) {
+        setStudents(cachedData);
+        setLoading(false);
+        
+        
+        apiService.getStudentData(tableName).then(freshData => {
+          if (freshData && freshData.length > 0) {
+            setStudents(freshData);
+          }
+        }).catch(() => {
+          
+        });
+      } else {
+        
+        const data = await apiService.getStudentData(tableName);
+        setStudents(data);
+        setLoading(false);
+      }
     } catch (error) {
       console.error('Failed to load student data:', error);
       toast({
@@ -79,7 +172,6 @@ const Dashboard = () => {
         description: `Failed to load data for ${tableName.replace(/_/g, ' ')}. Please try again.`,
       });
       setStudents([]);
-    } finally {
       setLoading(false);
     }
   };
@@ -169,11 +261,12 @@ const Dashboard = () => {
             students={students}
             onOpenGithubDetails={handleOpenGithubDetails}
             onOpenLeetcodeDetails={handleOpenLeetcodeDetails}
+            selectedTable={selectedTable}
           />
         )}
       </main>
 
-      {/* Modals */}
+      {}
       <GithubDetailsModal
         student={selectedStudentForGithub}
         isOpen={!!selectedStudentForGithub}

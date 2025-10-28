@@ -79,7 +79,7 @@ const computeSeries = (
     }
   }
 
-  // Determine range
+  
   let start: Date | null = null;
   let end: Date | null = null;
 
@@ -97,7 +97,7 @@ const computeSeries = (
     end = endOfToday;
   } else if (range === 'custom') {
     if (!customRange?.from && !customRange?.to) {
-      // default last 7 days
+      
       start = new Date(endOfToday.getTime() - 6 * DAY_MS);
       end = endOfToday;
     } else {
@@ -106,11 +106,11 @@ const computeSeries = (
       start = s ? new Date(s.getFullYear(), s.getMonth(), s.getDate()) : null;
       end = e ? new Date(e.getFullYear(), e.getMonth(), e.getDate()) : null;
     }
-    // Clamp to today
+    
     if (end && end > endOfToday) end = endOfToday;
     if (start && start > endOfToday) start = endOfToday;
   } else if (range === 'all') {
-    // overall from first date to last date in hist
+    
     const keys = [...map.keys()].sort();
     if (keys.length) {
       start = new Date(keys[0]);
@@ -133,25 +133,25 @@ const computeSeries = (
 
 const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onClose, students }) => {
   const [query, setQuery] = useState("");
-  // composite ids: `${class}:${roll}` to support All-classes mode
+  
   const [selected, setSelected] = useState<string[]>([]);
   const [range, setRange] = useState<RangeKey>('30d');
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
   const isMobile = useIsMobile();
 
-  // Derive available class names from students; fallback to single 'All' if unknown
-  // Available classes are fetched; default to All
+  
+  
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const classNames = useMemo(() => ["All", ...availableClasses], [availableClasses]);
 
   const [selectedClass, setSelectedClass] = useState<string>("All");
 
-  // Internal data store: class -> students
+  
   const [dataByClass, setDataByClass] = useState<Record<string, StudentWithClass[]>>({});
   const [loadingClasses, setLoadingClasses] = useState(false);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
-  // Load classes when modal opens
+  
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -162,7 +162,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
         const classes = resp.tables || [];
         if (!cancelled) {
           setAvailableClasses(classes);
-          // Keep default as 'All' unless user already chose something else earlier in this session
+          
           setSelectedClass((prev) => (prev ? prev : 'All'));
         }
       } finally {
@@ -173,7 +173,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     return () => { cancelled = true; };
   }, [isOpen]);
 
-  // Load students for selected class or all classes
+  
   useEffect(() => {
     let cancelled = false;
     const loadForClass = async (
@@ -263,7 +263,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     return () => { cancelled = true; };
   }, [isOpen, selectedClass, availableClasses]);
 
-  // Build groups for UI
+  
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
     const match = (s: StudentWithClass) =>
@@ -298,7 +298,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     [idMap, selected]
   );
 
-  // Helpers
+  
   const studentKey = (s: StudentWithClass) => `${s.table_name}:${s.roll_number}`;
   const toTime = (v: string | undefined | null) => {
     if (!v) return Number.NEGATIVE_INFINITY;
@@ -306,28 +306,28 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     return Number.isFinite(t) ? t : Number.NEGATIVE_INFINITY;
   };
 
-  // Shared helper: count badges from various representations
+  
   const countBadges = (val?: string | null) => {
     if (!val) return 0;
     const raw = String(val).trim();
     if (!raw || /^(?:—|-|n\/?a|null|undefined)$/i.test(raw)) return 0;
 
-    // Explicit zero-like forms should map to 0 (fix: previously could return 1)
+    
     if (/^0+$/.test(raw)) return 0;
     if (/^\[?\s*0\s*\]?$/.test(raw)) return 0;
 
-    // Try strict JSON first
+    
     try {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
       if (parsed && typeof parsed === "object") {
-        // Common shapes
+        
         const maybeArrays = ["badges", "items", "list"] as const;
         for (const k of maybeArrays) {
           const arr: unknown = (parsed as any)[k];
           if (Array.isArray(arr)) return arr.filter(Boolean).length;
         }
-        // Object of counts e.g. { gold: 2, silver: 1 } — include zeros
+        
         const numsAll = Object.values(parsed)
           .map((v) => Number(v))
           .filter((n) => Number.isFinite(n) && n >= 0);
@@ -335,7 +335,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       }
     } catch {}
 
-    // Heuristic: bracketed list like [..]
+    
     if (raw.startsWith("[") && raw.endsWith("]")) {
       if (raw.includes("{")) {
         const matches = raw.match(/{/g);
@@ -349,38 +349,38 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       return parts.length;
     }
 
-    // Heuristic: numeric counts in the string
+    
     const digitMatches = raw.match(/\d+/g);
     if (digitMatches && digitMatches.length) {
       const numsAll = digitMatches.map((n) => Number(n)).filter((n) => Number.isFinite(n) && n >= 0);
       const sum = numsAll.reduce((a, b) => a + b, 0);
-      // If the context mentions badges or the string is numbers-only-ish, trust the numeric sum (can be 0)
+      
       if (/badge/i.test(raw) || /^[\s,;|0-9]+$/.test(raw)) {
         return sum;
       }
-      // Otherwise, only use this heuristic when it clearly expresses a count (single number)
+      
       if (numsAll.length === 1) return sum;
     }
 
-    // Heuristic: repeated word 'badge'
+    
     const badgeHits = raw.match(/badge/gi);
     if (badgeHits && badgeHits.length) {
-      // If it says "0 badge(s)", don't count as 1
+      
       if (/\b0\s*badge/i.test(raw)) return 0;
       return badgeHits.length;
     }
 
-    // Delimited fallback: if tokens are numeric-like, use their sum; otherwise count items
+    
     const parts = raw.split(/[|,;\n]+/).map((t) => t.trim()).filter(Boolean);
     if (parts.length) {
       const numericParts = parts.map((p) => ( /^\d+$/.test(p) ? Number(p) : NaN ));
       const allNumeric = numericParts.every((n) => Number.isFinite(n));
       if (allNumeric) {
         const sum = (numericParts as number[]).reduce((a, b) => a + b, 0);
-        return sum; // can be 0
+        return sum; 
       }
     }
-    return parts.length; // if no delimiter found or mixed text, fall back to item count
+    return parts.length; 
   };
 
   type MetricKey =
@@ -401,7 +401,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     | "lc_lastsubmission"
     | "lc_lastacceptedsubmission";
 
-  // Compute winners per metric (ties included). Higher-is-better for most; lower-is-better for ranking; newer-is-better for dates.
+  
   const winners = useMemo(() => {
     const res: Record<MetricKey, Set<string>> = {
       git_followers: new Set(),
@@ -450,28 +450,28 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
       }
     };
 
-    // GitHub numeric highs
+    
     maxBy((s) => Number(s.git_followers ?? 0), "git_followers");
     maxBy((s) => Number(s.git_public_repo ?? 0), "git_public_repo");
     maxBy((s) => Number(s.git_original_repo ?? 0), "git_original_repo");
     maxBy((s) => Number(s.git_authored_repo ?? 0), "git_authored_repo");
-    // Latest commit date
+    
     maxBy((s) => toTime(s.last_commit_date), "last_commit_date");
     maxBy((s) => countBadges(s.git_badges), "git_badges_count");
 
-    // LeetCode highs
+    
     maxBy((s) => Number(s.lc_total_solved ?? 0), "lc_total_solved");
     maxBy((s) => Number(s.lc_easy ?? 0), "lc_easy");
     maxBy((s) => Number(s.lc_medium ?? 0), "lc_medium");
     maxBy((s) => Number(s.lc_hard ?? 0), "lc_hard");
     maxBy((s) => Number(s.lc_cur_streak ?? 0), "lc_cur_streak");
     maxBy((s) => Number(s.lc_max_streak ?? 0), "lc_max_streak");
-    // Latest submission dates
+    
     maxBy((s) => toTime(s.lc_lastsubmission), "lc_lastsubmission");
     maxBy((s) => toTime(s.lc_lastacceptedsubmission), "lc_lastacceptedsubmission");
-    // LC badges count (higher is better)
+    
     maxBy((s) => countBadges(s.lc_badges), "lc_badges_count");
-    // Ranking: lower is better (only if > 0)
+    
     minBy((s) => {
       const r = Number(s.lc_ranking);
       return Number.isFinite(r) && r > 0 ? r : Number.POSITIVE_INFINITY;
@@ -494,7 +494,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     }
   };
 
-  // Per-student win counts and overall champion(s)
+  
   const metricsAll = useMemo(() => Object.keys(winners) as MetricKey[], [winners]);
   const totalConsidered = useMemo(
     () => metricsAll.filter((m) => winners[m].size > 0).length,
@@ -520,7 +520,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     const id = `${cls}:${roll}`;
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((r) => r !== id);
-      if (prev.length >= 3) return prev; // max 3
+      if (prev.length >= 3) return prev; 
       return [...prev, id];
     });
   };
@@ -549,7 +549,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
     }
   };
 
-  // Auto-clear selection when modal closes
+  
   useEffect(() => {
     if (!isOpen) {
       setSelected([]);
@@ -568,9 +568,9 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Class Filter + Range Picker */}
+          {}
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Class Selector */}
+            {}
             <Select value={selectedClass} onValueChange={setSelectedClass}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Class" />
@@ -614,7 +614,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
               </Popover>
             )}
           </div>
-          {/* Selection Controls */}
+          {}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm sm:text-base">Select 2 to 3 students</CardTitle>
@@ -691,7 +691,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
             </CardContent>
           </Card>
 
-          {/* Comparison */}
+          {}
           {canCompare && (
             <div className={`grid grid-cols-1 ${columnsClass} gap-4`}>
               {selectedStudents.map((s) => {
@@ -883,7 +883,7 @@ const CompareStudentsModal: React.FC<CompareStudentsModalProps> = ({ isOpen, onC
             </div>
           )}
 
-          {/* Footer Actions */}
+          {}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Close</Button>
           </div>
