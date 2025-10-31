@@ -2,44 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Professional Dashboard Design System for Student Tracking */
-
 @layer base {
   :root {
-    /* Core Background & Text */
     --background: 210 20% 98%;
     --foreground: 215 25% 27%;
 
-    /* Card System */
     --card: 0 0% 100%;
     --card-foreground: 215 25% 27%;
 
-    /* Popover System */
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 27%;
 
-    /* Primary Brand - Professional Blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 217 91% 55%;
     --primary-muted: 217 91% 95%;
 
-    /* Secondary - Cool Gray */
     --secondary: 215 20% 65%;
     --secondary-foreground: 215 25% 27%;
     --secondary-hover: 215 20% 60%;
 
-    /* Muted Tones */
     --muted: 215 20% 95%;
     --muted-foreground: 215 15% 55%;
 
-    /* Accent - Success Green */
     --accent: 142 76% 36%;
     --accent-foreground: 0 0% 100%;
     --accent-hover: 142 76% 31%;
     --accent-muted: 142 76% 95%;
 
-    /* Status Colors */
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -49,29 +39,24 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    /* Interface Elements */
     --border: 215 20% 88%;
     --input: 215 20% 88%;
     --ring: 217 91% 60%;
 
-    /* Dashboard Specific */
     --dashboard-nav: 215 28% 17%;
     --dashboard-nav-foreground: 0 0% 100%;
     --dashboard-sidebar: 215 25% 95%;
     --dashboard-content: 210 20% 98%;
 
-    /* Table System */
     --table-header: 215 25% 95%;
     --table-row-even: 0 0% 100%;
     --table-row-odd: 215 20% 99%;
     --table-border: 215 20% 90%;
 
-    /* Notification System */
     --notification-bg: 0 84% 95%;
     --notification-border: 0 84% 80%;
     --notification-dot: 0 84% 60%;
 
-    /* Gradients */
     --gradient-primary: linear-gradient(
       135deg,
       hsl(217 91% 60%),
@@ -84,7 +69,6 @@
     );
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(215 20% 98%));
 
-    /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(215 25% 27% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(215 25% 27% / 0.1),
       0 2px 4px -1px hsl(215 25% 27% / 0.06);
@@ -93,7 +77,6 @@
     --shadow-xl: 0 20px 25px -5px hsl(215 25% 27% / 0.1),
       0 10px 10px -5px hsl(215 25% 27% / 0.04);
 
-    /* Animation */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -153,24 +136,20 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    /* Dashboard Specific (dark) */
     --dashboard-nav: 222.2 47.4% 11.2%;
     --dashboard-nav-foreground: 0 0% 100%;
     --dashboard-sidebar: 222.2 47.4% 8%;
     --dashboard-content: 222.2 40% 7.5%;
 
-    /* Table System (dark) */
     --table-header: 222.2 47.4% 11.2%;
     --table-row-even: 222.2 47.4% 9%;
     --table-row-odd: 222.2 47.4% 8%;
     --table-border: 217.2 32.6% 20%;
 
-    /* Notification System (dark) */
     --notification-bg: 0 62.8% 15%;
     --notification-border: 0 62.8% 30.6%;
     --notification-dot: 0 84% 60%;
 
-    /* Gradients (dark) */
     --gradient-primary: linear-gradient(
       135deg,
       hsl(217 91% 35%),
@@ -196,5 +175,26 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::-webkit-scrollbar {
+    width: 0px;
+    height: 0px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+
+  * {
+    -ms-overflow-style: none;
   }
 }

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AuthPage from "@/components/auth/AuthPage";
 import PasswordUpdate from "@/components/auth/PasswordUpdate";
 import Dashboard from "@/components/dashboard/Dashboard";
+import StatsPage from "./pages/Stats";
 import NotFound from "./pages/NotFound";
 import PublicClass from "./pages/PublicClass";
 import { Loader2 } from "lucide-react";
@@ -37,7 +38,7 @@ const AppContent = () => {
     );
   }
 
-  // If coming from Supabase recovery/invite links, show password update regardless of session
+  
   if (flowType === "recovery" || flowType === "invite") {
     return (
       <div className="min-h-screen bg-dashboard-content flex flex-col">
@@ -56,10 +57,11 @@ const AppContent = () => {
           <Routes>
             <Route path="/" element={user ? <Dashboard /> : <AuthPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            {/* Public read-only class page (query param controlled) */}
+            {}
             <Route path="/classes" element={<PublicClass />} />
             <Route path="/auth/update-password" element={<PasswordUpdate />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/stats" element={user ? <StatsPage /> : <AuthPage />} />
+            {}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

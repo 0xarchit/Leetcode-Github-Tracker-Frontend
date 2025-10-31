@@ -1,42 +1,51 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Student Tracker - GitHub & LeetCode Dashboard | 0xarchit</title>
-  <!-- PWA manifest & full screen settings -->
-  <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-  <link rel="icon" type="image/x-icon" href="/icons/logo192.png" />
-  <link rel="shortcut icon" href="/icons/favicon.ico" />
-  <!-- iOS fullscreen (no browser bar) -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Student Tracker" />
-  <!-- Android display mode hint -->
-  <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="description" content="Professional dashboard for teachers and admins to monitor student GitHub and LeetCode activity" />
+    <title>Student Tracker - GitHub & LeetCode Dashboard | 0xarchit</title>
+    <!-- PWA manifest & full screen settings -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/x-icon" href="/icons/logo192.png" />
+    <link rel="shortcut icon" href="/icons/favicon.ico" />
+    <!-- iOS fullscreen (no browser bar) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Student Tracker" />
+    <!-- Android display mode hint -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="description"
+      content="Professional dashboard for teachers and admins to monitor student GitHub and LeetCode activity"
+    />
     <meta name="author" content="0xArchit" />
     <meta property="og:title" content="Student Tracker Dashboard" />
-    <meta property="og:description" content="Monitor student GitHub and LeetCode progress with comprehensive analytics" />
+    <meta
+      property="og:description"
+      content="Monitor student GitHub and LeetCode progress with comprehensive analytics"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="./icons/logo512.png" />
     <script>
-      (function() {
+      (function () {
         try {
-          var storageKey = 'student-tracker-theme';
-          var theme = localStorage.getItem(storageKey) || 'system';
+          var storageKey = "student-tracker-theme";
+          var theme = localStorage.getItem(storageKey) || "system";
           var root = document.documentElement;
-          var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          root.classList.remove('light','dark');
-          if (theme === 'system') {
-            root.classList.add(systemDark ? 'dark' : 'light');
+          var systemDark = window.matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches;
+          root.classList.remove("light", "dark");
+          if (theme === "system") {
+            root.classList.add(systemDark ? "dark" : "light");
           } else {
             root.classList.add(theme);
           }
-
-          // PWA theme-color disabled by request; no runtime theme-color meta injection
-        } catch(e) { /* ignore */ }
+        } catch (e) {}
       })();
     </script>
   </head>

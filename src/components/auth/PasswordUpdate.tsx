@@ -31,12 +31,12 @@ const PasswordUpdate: React.FC = () => {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const params = useMemo(parseParams, []);
-  const flowType = (params["type"] || "").toLowerCase(); // recovery | invite
+  const flowType = (params["type"] || "").toLowerCase(); 
 
   const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
-    // Ensure the session from the invite/recovery link is active
+    
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       setSessionReady(!!data.session);
@@ -64,7 +64,7 @@ const PasswordUpdate: React.FC = () => {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       toast({ title: "Password updated", description: "You can now access the dashboard." });
-      // Clean URL and reload to land on Dashboard
+      
       try {
         if (window.history.replaceState) {
           window.history.replaceState({}, "", "/");

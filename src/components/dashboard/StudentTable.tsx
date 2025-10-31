@@ -1,12 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -35,9 +27,10 @@ interface StudentTableProps {
   onOpenGithubDetails: (student: Student) => void;
   onOpenLeetcodeDetails: (student: Student) => void;
   readOnly?: boolean;
+  selectedTable?: string | null;
 }
 
-type SortField = 'name' | 'roll_number' | 'lc_total_solved' | 'lc_cur_streak' | 'lc_max_streak' | 'lc_ranking' | 'last_commit_date' | 'lc_lastsubmission';
+type SortField = 'name' | 'roll_number' | 'lc_total_solved' | 'lc_cur_streak' | 'lc_max_streak' | 'lc_ranking' | 'last_commit_date' | 'lc_lastsubmission' | 'section';
 type SortDirection = 'asc' | 'desc';
 
 const StudentTable: React.FC<StudentTableProps> = ({
@@ -45,7 +38,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
   onOpenGithubDetails,
   onOpenLeetcodeDetails,
   readOnly = false,
+  selectedTable = null,
 }) => {
+  const ALL_CLASSES_KEY = '__all_classes__';
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -54,10 +49,11 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const filteredAndSortedStudents = useMemo(() => {
     let filtered = students.filter(student =>
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.roll_number.toString().includes(searchTerm)
+      student.roll_number.toString().includes(searchTerm) ||
+      (student.section && student.section.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
-    // Apply activity filter
+    
     if (filterBy === 'active') {
       const threeDaysAgo = new Date();
       threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
@@ -74,7 +70,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
       });
     }
 
-    // Sort
+    
     filtered.sort((a, b) => {
       let aValue: any = a[sortField];
       let bValue: any = b[sortField];
@@ -84,15 +80,15 @@ const StudentTable: React.FC<StudentTableProps> = ({
         bValue = new Date(bValue);
       }
 
-      // Ensure numeric comparison for ranking; always push missing/invalid to the end
+      
       if (sortField === 'lc_ranking') {
         const aNum = Number(aValue);
         const bNum = Number(bValue);
         const aMissing = !Number.isFinite(aNum) || aNum <= 0;
         const bMissing = !Number.isFinite(bNum) || bNum <= 0;
         if (aMissing && bMissing) return 0;
-        if (aMissing) return 1; // a goes to end
-        if (bMissing) return -1; // b goes to end
+        if (aMissing) return 1; 
+        if (bMissing) return -1; 
         aValue = aNum;
         bValue = bNum;
       }
@@ -125,7 +121,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
   const getDaysAgo = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
-    // Set both dates to start of day to get accurate day difference
+    
     date.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     const diffTime = Math.abs(today.getTime() - date.getTime());
@@ -155,7 +151,7 @@ const StudentTable: React.FC<StudentTableProps> = ({
           <span>Student Performance Dashboard</span>
         </CardTitle>
         
-        {/* Filters and Search */}
+        {}
         <div className="flex flex-col gap-4 mt-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -205,94 +201,113 @@ const StudentTable: React.FC<StudentTableProps> = ({
             No students found matching your criteria.
           </div>
         ) : (
-          <div className="rounded-lg border border-table-border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-table-header hover:bg-table-header">
-                  <TableHead className="text-center w-14 min-w-[56px]">
-                    Sr No.
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none min-w-[120px]"
-                    onClick={() => handleSort('roll_number')}
-                  >
-                    <div className="flex items-center">
-                      Roll
-                      <SortIcon field="roll_number" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none min-w-[150px]"
-                    onClick={() => handleSort('name')}
-                  >
-                    <div className="flex items-center">
-                      Name
-                      <SortIcon field="name" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none text-center min-w-[120px]"
-                    onClick={() => handleSort('lc_total_solved')}
-                  >
-                    <div className="flex items-center justify-center">
-                      LC Solved
-                      <SortIcon field="lc_total_solved" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none text-center min-w-[120px]"
-                    onClick={() => handleSort('lc_ranking')}
-                  >
-                    <div className="flex items-center justify-center">
-                      LC Rank
-                      <SortIcon field="lc_ranking" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none text-center min-w-[120px]"
-                    onClick={() => handleSort('lc_lastsubmission')}
-                  >
-                    <div className="flex items-center justify-center">
-                      LC Activity
-                      <SortIcon field="lc_lastsubmission" />
-                    </div>
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer select-none text-center min-w-[120px]"
-                    onClick={() => handleSort('last_commit_date')}
-                  >
-                    <div className="flex items-center justify-center">
-                      Git Commit
-                      <SortIcon field="last_commit_date" />
-                    </div>
-                  </TableHead>
-                  {!readOnly && (
-                  <TableHead className="text-center min-w-[100px]">Actions</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="rounded-lg border border-table-border overflow-hidden">
+            <div className="overflow-auto relative max-h-[calc(100vh-300px)]">
+              <table className="w-full caption-bottom text-sm min-w-full">
+                <thead className="sticky top-0 z-20 bg-table-header border-b shadow-sm">
+                  <tr className="bg-table-header hover:bg-table-header border-b">
+                    <th className="h-12 px-4 text-center w-14 min-w-[56px] align-middle font-medium text-muted-foreground sticky left-0 z-30 border-r border-table-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]" style={{ backgroundColor: 'hsl(var(--table-header))' }}>
+                      Sr No.
+                    </th>
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none min-w-[150px] text-left align-middle font-medium text-muted-foreground sticky left-14 z-30 border-r border-table-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      onClick={() => handleSort('name')}
+                      style={{ backgroundColor: 'hsl(var(--table-header))' }}
+                    >
+                      <div className="flex items-center">
+                        Name
+                        <SortIcon field="name" />
+                      </div>
+                    </th>
+                    {selectedTable === ALL_CLASSES_KEY && (
+                      <th 
+                        className="h-12 px-4 cursor-pointer select-none min-w-[120px] text-left align-middle font-medium text-muted-foreground"
+                        onClick={() => handleSort('section')}
+                      >
+                        <div className="flex items-center">
+                          Section
+                          <SortIcon field="section" />
+                        </div>
+                      </th>
+                    )}
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none min-w-[120px] text-left align-middle font-medium text-muted-foreground"
+                      onClick={() => handleSort('roll_number')}
+                    >
+                      <div className="flex items-center">
+                        Roll
+                        <SortIcon field="roll_number" />
+                      </div>
+                    </th>
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none text-center min-w-[120px] align-middle font-medium text-muted-foreground"
+                      onClick={() => handleSort('lc_total_solved')}
+                    >
+                      <div className="flex items-center justify-center">
+                        LC Solved
+                        <SortIcon field="lc_total_solved" />
+                      </div>
+                    </th>
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none text-center min-w-[120px] align-middle font-medium text-muted-foreground"
+                      onClick={() => handleSort('lc_ranking')}
+                    >
+                      <div className="flex items-center justify-center">
+                        LC Rank
+                        <SortIcon field="lc_ranking" />
+                      </div>
+                    </th>
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none text-center min-w-[120px] align-middle font-medium text-muted-foreground"
+                      onClick={() => handleSort('lc_lastsubmission')}
+                    >
+                      <div className="flex items-center justify-center">
+                        LC Activity
+                        <SortIcon field="lc_lastsubmission" />
+                      </div>
+                    </th>
+                    <th 
+                      className="h-12 px-4 cursor-pointer select-none text-center min-w-[120px] align-middle font-medium text-muted-foreground"
+                      onClick={() => handleSort('last_commit_date')}
+                    >
+                      <div className="flex items-center justify-center">
+                        Git Commit
+                        <SortIcon field="last_commit_date" />
+                      </div>
+                    </th>
+                    {!readOnly && (
+                    <th className="h-12 px-4 text-center min-w-[100px] align-middle font-medium text-muted-foreground">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="[&_tr:last-child]:border-0">
                 {filteredAndSortedStudents.map((student, index) => {
                   const activityStatus = getActivityStatus(student.lc_lastsubmission);
                   const isEvenRow = index % 2 === 0;
+                  const bgColor = isEvenRow ? 'hsl(var(--table-row-even))' : 'hsl(var(--table-row-odd))';
                   
                   return (
-                    <TableRow 
+                    <tr 
                       key={student.roll_number}
-                      className={`transition-fast hover:bg-muted/50 ${
-                        isEvenRow ? 'bg-table-row-even' : 'bg-table-row-odd'
-                      }`}
+                      className="border-b transition-colors hover:bg-muted/50"
                     >
-                      <TableCell className="text-center text-muted-foreground">
+                      <td className="p-4 align-middle text-center text-muted-foreground sticky left-0 z-10 border-r border-table-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style={{ backgroundColor: bgColor }}>
                         {index + 1}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {student.roll_number}
-                      </TableCell>
-                      <TableCell className="font-medium">
+                      </td>
+                      <td className="p-4 align-middle font-medium sticky left-14 z-10 border-r border-table-border shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]" style={{ backgroundColor: bgColor }}>
                         {student.name.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())}
-                      </TableCell>
-                      <TableCell className="text-center">
+                      </td>
+                      {selectedTable === ALL_CLASSES_KEY && (
+                        <td className="p-4 align-middle text-sm">
+                          <Badge variant="secondary" className="text-xs">
+                            {student.section || "Unknown"}
+                          </Badge>
+                        </td>
+                      )}
+                      <td className="p-4 align-middle font-mono text-sm">
+                        {student.roll_number}
+                      </td>
+                      <td className="p-4 align-middle text-center">
                         <div className="flex flex-col items-center space-y-1">
                           <span className="font-bold text-lg text-primary">
                             {student.lc_total_solved}
@@ -309,8 +324,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             </Badge>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
+                      </td>
+                      <td className="p-4 align-middle text-center">
                         <div className="flex flex-col items-center space-y-1">
                           <span className="font-semibold">
                             {(() => {
@@ -322,8 +337,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             })()}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
+                      </td>
+                      <td className="p-4 align-middle text-center">
                         <div className="flex flex-col items-center space-y-1">
                           <Badge 
                             variant={activityStatus.color === 'success' ? 'default' : 
@@ -336,8 +351,8 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             Streak: {student.lc_cur_streak}/{student.lc_max_streak}
                           </span>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
+                      </td>
+                      <td className="p-4 align-middle text-center">
                         <div className="flex flex-col items-center space-y-1">
                           <span className="text-sm">
                             {formatDate(student.last_commit_date)}
@@ -346,9 +361,9 @@ const StudentTable: React.FC<StudentTableProps> = ({
                             {getDaysAgo(student.last_commit_date)}d ago
                           </span>
                         </div>
-                      </TableCell>
+                      </td>
                       {!readOnly && (
-                        <TableCell className="text-center">
+                        <td className="p-4 align-middle text-center">
                           <div className="flex justify-center flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
                             <Button
                               variant="outline"
@@ -367,13 +382,14 @@ const StudentTable: React.FC<StudentTableProps> = ({
                               <Code2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        </TableCell>
+                        </td>
                       )}
-                    </TableRow>
+                    </tr>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
+            </div>
           </div>
         )}
       </CardContent>

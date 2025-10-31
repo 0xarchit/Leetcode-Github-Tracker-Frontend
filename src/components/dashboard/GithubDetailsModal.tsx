@@ -50,7 +50,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
   onClose,
 }) => {
   if (!student) return null;
-  // Chart data prep
+  
   type RangeKey = '7d' | '30d' | '365d' | 'all' | 'custom';
   const [range, setRange] = useState<RangeKey>('30d');
   const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
@@ -78,7 +78,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
     else if (range === '30d') start = new Date(now.getTime() - 30 * 86400000);
     else if (range === '365d') start = new Date(now.getTime() - 365 * 86400000);
     else if (range === 'custom') {
-      // Default to last 7 days if no selection
+      
       if (!customRange?.from && !customRange?.to) {
         end = new Date();
         start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6);
@@ -86,7 +86,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
         start = customRange?.from ? new Date(customRange.from) : null;
         end = customRange?.to ? new Date(customRange.to) : (customRange?.from ? new Date(customRange.from) : null);
       }
-      // Clamp to today (no future dates)
+      
       if (end && end > now) end = now;
       if (start && start > now) start = now;
     }
@@ -121,7 +121,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return null;
     const today = new Date();
-    // Set both dates to start of day to get accurate day difference
+    
     date.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     const diffTime = Math.abs(today.getTime() - date.getTime());
@@ -175,7 +175,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Contributions Chart */}
+          {}
           <Card className="bg-gradient-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">GitHub Contributions</CardTitle>
@@ -228,7 +228,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Stats Cards */}
+          {}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card className="bg-gradient-card">
               <CardContent className="p-3 sm:p-4 text-center">
@@ -271,7 +271,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
             </Card>
           </div>
 
-          {/* Repository Details */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader>
@@ -318,7 +318,7 @@ const GithubDetailsModal: React.FC<GithubDetailsModalProps> = ({
             </Card>
           </div>
 
-          {/* Badges */}
+          {}
           {badges.length > 0 && (
             <Card>
               <CardHeader>

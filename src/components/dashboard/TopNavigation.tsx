@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Select, 
@@ -15,8 +16,18 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Settings, X, LogOut, GraduationCap } from 'lucide-react';
+import { Bell, Settings, X, LogOut, GraduationCap, BarChart3, LayoutDashboard, Users } from 'lucide-react';
 import { apiService, type Notification } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -38,19 +49,25 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   onOpenSettings,
   onOpenCompare,
 }) => {
+  const ALL_CLASSES_KEY = '__all_classes__';
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
   const [showOnlySelected, setShowOnlySelected] = useState<boolean>(true);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [showSignOutDialog, setShowSignOutDialog] = useState(false);
   const { signOut, user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isStatsPage = location.pathname === '/stats';
 
   useEffect(() => {
     loadNotifications();
   }, []);
 
-  // Re-filter when selection or toggle changes
+  
   useEffect(() => {
     const filtered = (showOnlySelected && selectedTable)
       ? allNotifications.filter(n => n.table_name === selectedTable)
@@ -62,7 +79,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
     try {
       const notifs = await apiService.getNotifications();
   setAllNotifications(notifs);
-  // Initial filter will be applied by effect
+  
     } catch (error) {
       console.error('Failed to load notifications:', error);
     }
@@ -88,6 +105,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
   };
 
   const handleSignOut = async () => {
+    setShowSignOutDialog(false);
     await signOut();
   };
 
@@ -95,7 +113,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
     <div className="bg-dashboard-nav border-b border-border shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo & Title */}
+          {}
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
@@ -106,13 +124,19 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </div>
           </div>
 
-          {/* Center - Table Selector */}
+          {}
           <div className="flex-1 min-w-0 max-w-[9rem] sm:max-w-md mx-2 sm:mx-8">
             <Select value={selectedTable || ""} onValueChange={onTableSelect}>
               <SelectTrigger className="bg-background border-border text-sm">
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value={ALL_CLASSES_KEY}>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5" />
+                    <span className="font-semibold">All Classes</span>
+                  </div>
+                </SelectItem>
                 {availableTables.map((table) => (
                   <SelectItem key={table} value={table}>
                     {table.replace(/_/g, ' ')}
@@ -122,36 +146,42 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
             </Select>
           </div>
 
-          {/* Right Side - Compare, Notifications, Settings, User */}
+          {}
           <div className="flex items-center space-x-1 sm:space-x-4">
-            {/* Compare Students */}
-            {/* Compare: icon on mobile, text on desktop */}
-            <div className="flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onOpenCompare}
-                className="sm:hidden text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
-                aria-label="Compare students"
-                title="Compare students"
-              >
-                {/* Simple compare arrows using SVG to avoid adding a dependency */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="17 7 12 2 7 7"></polyline>
-                  <line x1="12" y1="2" x2="12" y2="22"></line>
-                  <polyline points="7 17 12 22 17 17"></polyline>
-                </svg>
-              </Button>
+            {}
+            <div className="hidden sm:flex items-center">
               <Button 
                 variant="default" 
                 size="sm" 
                 onClick={onOpenCompare}
-                className="hidden sm:inline-flex"
               >
                 Compare
               </Button>
             </div>
-            {/* Notifications */}
+            
+            {}
+            <div className="hidden sm:flex items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(isStatsPage ? '/' : '/stats')}
+                className="flex items-center gap-2"
+              >
+                {isStatsPage ? (
+                  <>
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </>
+                ) : (
+                  <>
+                    <BarChart3 className="h-4 w-4" />
+                    Stats
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            {}
             <DropdownMenu open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative h-8 w-8 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
@@ -171,7 +201,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
                 className="w-[min(90vw,22rem)] max-h-[70vh] overflow-y-auto p-0"
                 sideOffset={8}
               >
-                {/* Sticky header with filter + title for better UX on long lists */}
+                {}
                 <div className="sticky top-0 z-10 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-b">
                   <div className="px-2 py-2">
                     <DropdownMenuCheckboxItem
@@ -192,7 +222,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
                   </div>
                 </div>
 
-                {/* Content */}
+                {}
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
                     No notifications
@@ -227,20 +257,24 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Theme Toggle */}
-            <ThemeToggle className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10" />
+            {}
+            <div className="hidden sm:block">
+              <ThemeToggle className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10" />
+            </div>
 
-            {/* Settings */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onOpenSettings}
-              className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+            {}
+            <div className="hidden sm:block">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onOpenSettings}
+                className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
 
-            {/* User Menu */}
+            {}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 p-0 text-dashboard-nav-foreground hover:bg-dashboard-nav-foreground/10">
@@ -251,12 +285,62 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-2 py-1.5 text-sm text-muted-foreground truncate max-w-48">
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
                   {user?.email}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                
+                {}
+                {isMobile && (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate(isStatsPage ? '/' : '/stats')}>
+                      {isStatsPage ? (
+                        <>
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </>
+                      ) : (
+                        <>
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Stats
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onOpenCompare}>
+                      <svg 
+                        className="mr-2 h-4 w-4" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="17 7 12 2 7 7"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="22"></line>
+                        <polyline points="7 17 12 22 17 17"></polyline>
+                      </svg>
+                      Compare Students
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onOpenSettings}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <div className="flex items-center justify-between w-full cursor-pointer">
+                        <span className="flex items-center">
+                          <span className="mr-2">🌓</span>
+                          Theme
+                        </span>
+                        <ThemeToggle className="h-6 w-6 p-0" />
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                <DropdownMenuItem onClick={() => setShowSignOutDialog(true)} className="text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
@@ -265,6 +349,24 @@ const TopNavigation: React.FC<TopNavigationProps> = ({
           </div>
         </div>
       </div>
+      
+      {}
+      <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will need to sign in again to access the dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

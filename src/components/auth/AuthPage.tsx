@@ -35,7 +35,7 @@ const AuthPage = () => {
         const res = await apiService.getAvailableTables();
         setAvailable(res.tables || []);
       } catch {
-        // ignore on auth page
+        
       }
     })();
   }, []);

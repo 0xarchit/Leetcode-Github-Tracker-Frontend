@@ -10,18 +10,18 @@ createRoot(document.getElementById("root")!).render(
   </ThemeProvider>
 );
 
-// Register service worker via VitePWA
+
 try {
   registerSW({ immediate: true, onRegisteredSW() {}, onOfflineReady() {} });
 } catch {}
 
-// Capture the PWA install prompt globally so any component can trigger it later
+
 window.addEventListener('beforeinstallprompt', (e: any) => {
   try {
     e.preventDefault();
   } catch {}
   (window as any).__deferredPWAInstallPrompt = e;
-  // Notify listeners that the prompt is available
+  
   try { window.dispatchEvent(new CustomEvent('pwa:beforeinstallprompt')); } catch {}
 });
 
@@ -32,7 +32,7 @@ window.addEventListener('appinstalled', () => {
   try { window.dispatchEvent(new CustomEvent('pwa:installed-state-changed', { detail: { installed: true } })); } catch {}
 });
 
-// Maintain a global installed-state flag for components to read without duplicating logic
+
 (() => {
   let relatedInstalled = false;
   let hbTimer: number | null = null;
@@ -60,11 +60,11 @@ window.addEventListener('appinstalled', () => {
     try { window.dispatchEvent(new CustomEvent('pwa:installed-state-changed', { detail: { installed } })); } catch {}
   };
 
-  // Best-effort verification using getInstalledRelatedApps when available
+  
   const verifyRelatedApps = async () => {
     const navAny = navigator as any;
     if (!navAny.getInstalledRelatedApps) {
-      // On platforms without the API, prefer enabling install if not in display-mode
+      
       relatedInstalled = false;
       setFlag();
       return;
@@ -79,7 +79,7 @@ window.addEventListener('appinstalled', () => {
       }
       setFlag();
     } catch {
-      // On error, don't force installed state
+      
       relatedInstalled = false;
       setFlag();
     }
@@ -87,25 +87,25 @@ window.addEventListener('appinstalled', () => {
 
   const startHeartbeatIfStandalone = () => {
     if (!computeStandaloneOnly()) return;
-    // Mark installed and start heartbeating so other tabs get a storage event immediately
+    
     try { localStorage.setItem('pwa_installed', '1'); } catch {}
     const beat = () => {
       try { localStorage.setItem('pwa_heartbeat', String(Date.now())); } catch {}
     };
     beat();
-    if (hbTimer) return; // already running
+    if (hbTimer) return; 
     hbTimer = window.setInterval(beat, 30000);
   };
   const stopHeartbeat = () => {
     if (hbTimer) { clearInterval(hbTimer); hbTimer = null; }
   };
 
-  // Initial compute as early as possible, then verify
+  
   setFlag();
   verifyRelatedApps();
   startHeartbeatIfStandalone();
 
-  // React to display-mode changes
+  
   try {
     const mqStandalone = window.matchMedia('(display-mode: standalone)');
     const mqFullscreen = window.matchMedia('(display-mode: fullscreen)');

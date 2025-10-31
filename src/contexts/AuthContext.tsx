@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
+    
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -35,14 +35,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Get initial session
+    
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for cross-tab logout events
+    
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'student-tracker:logout') {
         setSession(null);
@@ -72,12 +72,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     } catch {}
     try {
-      // Broadcast logout to other tabs and clear persisted data
+      
       localStorage.setItem('student-tracker:logout', Date.now().toString());
       localStorage.clear();
       sessionStorage?.clear?.();
     } catch {}
-    // Hard reload to ensure a clean state
+    
     window.location.reload();
   };
 
