@@ -1,42 +1,46 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { 
-  Code2, 
-  Trophy, 
-  Target, 
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import {
+  Code2,
+  Trophy,
+  Target,
   Flame,
   Calendar,
   Award,
   TrendingUp,
-  ExternalLink
-} from 'lucide-react';
-import { Student } from '@/services/api';
+  ExternalLink,
+} from "lucide-react";
+import { Student } from "@/services/api";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Calendar as RangeCalendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { DateRange } from "react-day-picker";
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
-  Line,
-  LineChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 interface LeetcodeDetailsModalProps {
   student: Student | null;
@@ -50,18 +54,24 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
   onClose,
 }) => {
   if (!student) return null;
-  
-  type RangeKey = '7d' | '30d' | '365d' | 'all' | 'custom';
-  const [range, setRange] = useState<RangeKey>('30d');
-  const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
+
+  type RangeKey = "7d" | "30d" | "365d" | "all" | "custom";
+  const [range, setRange] = useState<RangeKey>("30d");
+  const [customRange, setCustomRange] = useState<DateRange | undefined>(
+    undefined
+  );
   const isMobile = useIsMobile();
 
   const formatRangeLabel = (r?: DateRange) => {
-    if (!r?.from && !r?.to) return 'Select dates';
-    const opts: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    const from = r?.from ? r.from.toLocaleDateString(undefined, opts) : '';
+    if (!r?.from && !r?.to) return "Select dates";
+    const opts: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    const from = r?.from ? r.from.toLocaleDateString(undefined, opts) : "";
     const to = r?.to ? r.to.toLocaleDateString(undefined, opts) : from;
-    return from && to ? `${from} — ${to}` : from || 'Select dates';
+    return from && to ? `${from} — ${to}` : from || "Select dates";
   };
 
   const lcData = useMemo(() => {
@@ -70,48 +80,54 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
     const parsed = Object.entries(src)
       .map(([k, v]) => {
         const d = new Date(k);
-        return [new Date(d.getFullYear(), d.getMonth(), d.getDate()), Number(v)] as const;
+        return [
+          new Date(d.getFullYear(), d.getMonth(), d.getDate()),
+          Number(v),
+        ] as const;
       })
       .filter(([d, v]) => Number.isFinite(d.getTime()) && Number.isFinite(v))
       .sort((a, b) => a[0].getTime() - b[0].getTime());
 
-    
     const valueByDate = new Map<string, number>();
     for (const [d, v] of parsed) {
-      const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+      const key = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+        .toISOString()
+        .slice(0, 10);
       valueByDate.set(key, v);
     }
 
-    
     const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     let start: Date | null = null;
     let end: Date | null = null;
 
-    if (range === '7d') {
+    if (range === "7d") {
       start = new Date(today.getTime() - 7 * DAY_MS);
       end = today;
-    } else if (range === '30d') {
+    } else if (range === "30d") {
       start = new Date(today.getTime() - 30 * DAY_MS);
       end = today;
-    } else if (range === '365d') {
+    } else if (range === "365d") {
       start = new Date(today.getTime() - 365 * DAY_MS);
       end = today;
-    } else if (range === 'custom') {
-      
+    } else if (range === "custom") {
       if (!customRange?.from && !customRange?.to) {
         end = today;
         start = new Date(today.getTime() - 6 * DAY_MS);
       } else {
         const s = customRange?.from ? new Date(customRange.from) : null;
-        const e = customRange?.to ? new Date(customRange.to) : (customRange?.from ? new Date(customRange.from) : null);
+        const e = customRange?.to
+          ? new Date(customRange.to)
+          : customRange?.from
+          ? new Date(customRange.from)
+          : null;
         start = s ? new Date(s.getFullYear(), s.getMonth(), s.getDate()) : null;
         end = e ? new Date(e.getFullYear(), e.getMonth(), e.getDate()) : null;
       }
-      
+
       if (end && end > today) end = today;
       if (start && start > today) start = today;
-    } else if (range === 'all') {
+    } else if (range === "all") {
       if (parsed.length) {
         start = parsed[0][0];
         end = parsed[parsed.length - 1][0];
@@ -122,7 +138,6 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
 
     if (!start || !end) return [] as { date: string; count: number }[];
 
-    
     const out: { date: string; count: number }[] = [];
     for (let t = start.getTime(); t <= end.getTime(); t += DAY_MS) {
       const d = new Date(t);
@@ -132,23 +147,48 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
     return out;
   }, [student.lc_submission_history, range, customRange]);
 
-  const languages = student.lc_language ? student.lc_language.split(',').map(lang => lang.trim()) : [];
-  const badges = student.lc_badges && student.lc_badges !== '0' ? student.lc_badges.split(',').filter(badge => badge.trim()) : [];
+  const lcProgressData = useMemo(() => {
+    const progressHistory = student.lc_progress_history || [];
+    if (!Array.isArray(progressHistory) || progressHistory.length === 0) {
+      return [] as { date: string; count: number }[];
+    }
+
+    return progressHistory
+      .map((entry: { timestamp: string; count: number }) => {
+        const d = new Date(entry.timestamp);
+        if (!Number.isFinite(d.getTime()) || !Number.isFinite(entry.count))
+          return null;
+        return {
+          date: d.toISOString().slice(0, 10),
+          count: entry.count,
+        };
+      })
+      .filter((item): item is { date: string; count: number } => item !== null)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [student.lc_progress_history]);
+
+  const languages = student.lc_language
+    ? student.lc_language.split(",").map((lang) => lang.trim())
+    : [];
+  const badges =
+    student.lc_badges && student.lc_badges !== "0"
+      ? student.lc_badges.split(",").filter((badge) => badge.trim())
+      : [];
 
   const toNumber = (val: unknown): number | null => {
     if (val === null || val === undefined) return null;
-    const n = typeof val === 'number' ? val : Number(val);
+    const n = typeof val === "number" ? val : Number(val);
     return Number.isFinite(n) ? n : null;
   };
 
   const formatDate = (dateString?: string | null) => {
-    if (!dateString) return '—';
+    if (!dateString) return "—";
     const d = new Date(dateString);
-    if (Number.isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -157,7 +197,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
     const date = new Date(dateString);
     if (Number.isNaN(date.getTime())) return null;
     const today = new Date();
-    
+
     date.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     const diffTime = Math.abs(today.getTime() - date.getTime());
@@ -167,16 +207,20 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
 
   const getProgressColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-success';
-      case 'medium': return 'bg-warning';
-      case 'hard': return 'bg-destructive';
-      default: return 'bg-primary';
+      case "easy":
+        return "bg-success";
+      case "medium":
+        return "bg-warning";
+      case "hard":
+        return "bg-destructive";
+      default:
+        return "bg-primary";
     }
   };
 
   const formatRanking = (ranking: unknown) => {
     const n = toNumber(ranking);
-    return n === null ? 'N/A' : n.toLocaleString();
+    return n === null ? "N/A" : n.toLocaleString();
   };
 
   const totalSolved = toNumber(student.lc_total_solved) ?? 0;
@@ -190,7 +234,7 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-  <DialogContent className="w-[90vw] max-w-[90vw] sm:w-full sm:max-w-2xl max-h-[80vh] sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <DialogContent className="w-[90vw] max-w-[90vw] sm:w-full sm:max-w-2xl max-h-[80vh] sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 sm:gap-3 sm:pr-10 flex-wrap">
             <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center shrink-0">
@@ -201,15 +245,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <p className="text-sm font-normal text-muted-foreground mt-1 truncate">
                 {student.name}
                 {hasUsername ? (
-                  <>
-                    {' '}
-                    • @{student.leetcode_username}
-                  </>
+                  <> • @{student.leetcode_username}</>
                 ) : (
-                  <>
-                    {' '}
-                    • No LeetCode handle
-                  </>
+                  <> • No LeetCode handle</>
                 )}
               </p>
             </div>
@@ -217,7 +255,13 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               variant="outline"
               size="sm"
               className="mx-auto w-full sm:w-auto justify-center mt-2 sm:mt-0"
-              onClick={() => hasUsername && window.open(`https://leetcode.com/u/${student.leetcode_username}`, '_blank')}
+              onClick={() =>
+                hasUsername &&
+                window.open(
+                  `https://leetcode.com/u/${student.leetcode_username}`,
+                  "_blank"
+                )
+              }
               disabled={!hasUsername}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
@@ -234,8 +278,13 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <Select value={range} onValueChange={(v: RangeKey) => setRange(v)}>
-                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Range" /></SelectTrigger>
+                <Select
+                  value={range}
+                  onValueChange={(v: RangeKey) => setRange(v)}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Range" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="7d">Last 7 days</SelectItem>
                     <SelectItem value="30d">Last 30 days</SelectItem>
@@ -244,15 +293,25 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
-                {range === 'custom' && (
+                {range === "custom" && (
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button aria-label="Pick custom date range" variant="outline" size="sm" className="whitespace-nowrap max-w-full sm:max-w-none overflow-hidden text-ellipsis">
+                      <Button
+                        aria-label="Pick custom date range"
+                        variant="outline"
+                        size="sm"
+                        className="whitespace-nowrap max-w-full sm:max-w-none overflow-hidden text-ellipsis"
+                      >
                         <Calendar className="h-4 w-4 mr-2" />
                         {formatRangeLabel(customRange)}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent align="start" side="bottom" sideOffset={8} className="p-0 w-auto max-w-[90vw] overflow-auto">
+                    <PopoverContent
+                      align="start"
+                      side="bottom"
+                      sideOffset={8}
+                      className="p-0 w-auto max-w-[90vw] overflow-auto"
+                    >
                       <RangeCalendar
                         mode="range"
                         selected={customRange}
@@ -266,26 +325,103 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                 )}
               </div>
               <ChartContainer
-                config={{ submissions: { label: 'Submissions', color: 'hsl(var(--warning))' } }}
+                config={{
+                  submissions: {
+                    label: "Submissions",
+                    color: "hsl(var(--warning))",
+                  },
+                }}
                 className="h-[160px] sm:h-[220px] w-full overflow-hidden rounded-md"
               >
-                <LineChart data={lcData} margin={{ left: 12, right: 12, top: 6 }}>
+                <LineChart
+                  data={lcData}
+                  margin={{ left: 12, right: 12, top: 6 }}
+                >
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={24} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={30} />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={24}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tickLine={false}
+                    axisLine={false}
+                    width={30}
+                  />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="count" stroke="var(--color-submissions)" strokeWidth={2} dot={false} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="var(--color-submissions)"
+                    strokeWidth={2}
+                    dot={false}
+                  />
                 </LineChart>
               </ChartContainer>
             </CardContent>
           </Card>
-          {}
+
+          {/* LeetCode Progress History Chart */}
+          {lcProgressData.length > 0 && (
+            <Card className="bg-gradient-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Problem Count Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer
+                  config={{
+                    progress: {
+                      label: "Total Problems Solved",
+                      color: "hsl(var(--primary))",
+                    },
+                  }}
+                  className="h-[160px] sm:h-[220px] w-full overflow-hidden rounded-md"
+                >
+                  <LineChart
+                    data={lcProgressData}
+                    margin={{ left: 12, right: 12, top: 6 }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={false}
+                      width={40}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="count"
+                      stroke="var(--color-progress)"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </LineChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card className="bg-gradient-card">
               <CardContent className="p-3 sm:p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Target className="h-5 w-5 text-primary" />
-                  <span className="text-2xl font-bold text-primary">{totalSolved}</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {totalSolved}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground">Total Solved</p>
               </CardContent>
@@ -295,7 +431,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-3 sm:p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Trophy className="h-5 w-5 text-warning" />
-                  <span className="text-2xl font-bold text-warning">{formatRanking(student.lc_ranking)}</span>
+                  <span className="text-2xl font-bold text-warning">
+                    {formatRanking(student.lc_ranking)}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground">Ranking</p>
               </CardContent>
@@ -305,7 +443,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-3 sm:p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <Flame className="h-5 w-5 text-destructive" />
-                  <span className="text-2xl font-bold text-destructive">{toNumber(student.lc_cur_streak) ?? 0}</span>
+                  <span className="text-2xl font-bold text-destructive">
+                    {toNumber(student.lc_cur_streak) ?? 0}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground">Current Streak</p>
               </CardContent>
@@ -315,7 +455,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent className="p-3 sm:p-4 text-center">
                 <div className="flex items-center justify-center space-x-2 mb-2">
                   <TrendingUp className="h-5 w-5 text-accent" />
-                  <span className="text-2xl font-bold text-accent">{toNumber(student.lc_max_streak) ?? 0}</span>
+                  <span className="text-2xl font-bold text-accent">
+                    {toNumber(student.lc_max_streak) ?? 0}
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground">Max Streak</p>
               </CardContent>
@@ -334,41 +476,47 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <div className="space-y-3">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-success">Easy</span>
-                    <Badge variant="outline" className="text-success border-success">
+                    <span className="text-sm font-medium text-success">
+                      Easy
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-success border-success"
+                    >
                       {easy}
                     </Badge>
                   </div>
-                  <Progress 
-                    value={easyPct} 
-                    className="h-2"
-                  />
+                  <Progress value={easyPct} className="h-2" />
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-warning">Medium</span>
-                    <Badge variant="outline" className="text-warning border-warning">
+                    <span className="text-sm font-medium text-warning">
+                      Medium
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-warning border-warning"
+                    >
                       {medium}
                     </Badge>
                   </div>
-                  <Progress 
-                    value={mediumPct} 
-                    className="h-2"
-                  />
+                  <Progress value={mediumPct} className="h-2" />
                 </div>
-                
+
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium text-destructive">Hard</span>
-                    <Badge variant="outline" className="text-destructive border-destructive">
+                    <span className="text-sm font-medium text-destructive">
+                      Hard
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-destructive border-destructive"
+                    >
                       {hard}
                     </Badge>
                   </div>
-                  <Progress 
-                    value={hardPct} 
-                    className="h-2"
-                  />
+                  <Progress value={hardPct} className="h-2" />
                 </div>
               </div>
             </CardContent>
@@ -385,22 +533,34 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Last Submission:</p>
-                  <p className="font-medium">{formatDate(student.lc_lastsubmission)}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Last Submission:
+                  </p>
+                  <p className="font-medium">
+                    {formatDate(student.lc_lastsubmission)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(() => {
                       const d = getDaysAgo(student.lc_lastsubmission);
-                      return d === null ? 'No recent activity' : `${d} days ago`;
+                      return d === null
+                        ? "No recent activity"
+                        : `${d} days ago`;
                     })()}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Last Accepted:</p>
-                  <p className="font-medium">{formatDate(student.lc_lastacceptedsubmission)}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Last Accepted:
+                  </p>
+                  <p className="font-medium">
+                    {formatDate(student.lc_lastacceptedsubmission)}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(() => {
                       const d = getDaysAgo(student.lc_lastacceptedsubmission);
-                      return d === null ? 'No recent activity' : `${d} days ago`;
+                      return d === null
+                        ? "No recent activity"
+                        : `${d} days ago`;
                     })()}
                   </p>
                 </div>
@@ -418,8 +578,8 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                 {languages.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {languages.map((language, index) => (
-                      <Badge 
-                        key={index} 
+                      <Badge
+                        key={index}
                         variant="secondary"
                         className="bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200"
                       >
@@ -428,7 +588,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No languages specified</p>
+                  <p className="text-sm text-muted-foreground">
+                    No languages specified
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -446,9 +608,9 @@ const LeetcodeDetailsModal: React.FC<LeetcodeDetailsModalProps> = ({
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {badges.map((badge, index) => (
-                    <Badge 
-                      key={index} 
-                      variant="secondary" 
+                    <Badge
+                      key={index}
+                      variant="secondary"
                       className="bg-gradient-to-r from-orange-100 to-yellow-100 text-orange-800 border-orange-200"
                     >
                       {badge.trim()}

@@ -47,8 +47,16 @@ export interface Student {
   lc_language: string;
   gh_contribution_history?: Record<string, number>;
   lc_submission_history?: Record<string, number>;
+  lc_progress_history?: Array<{ timestamp: string; count: number }>;
   last_commit_day: string;
   section?: string;
+}
+
+export interface SuspiciousActivity {
+  type: "leetcode_submissions" | "leetcode_progress" | "github_commits";
+  reason: string;
+  value: number;
+  threshold: number;
 }
 
 export interface Notification {
