@@ -60,7 +60,7 @@ const SuspiciousList: React.FC<SuspiciousListProps> = ({
             <span>Suspicious Activities</span>
           </CardTitle>
           <CardDescription>
-            Monitoring unusual activity patterns in the last 24 hours
+            Monitoring unusual activity patterns in the last 30 days
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -93,7 +93,7 @@ const SuspiciousList: React.FC<SuspiciousListProps> = ({
           </Badge>
         </CardTitle>
         <CardDescription>
-          Students with unusual activity in the last 24 hours
+          Students with unusual activity in the last 30 days
         </CardDescription>
       </CardHeader>
       <CardContent>
